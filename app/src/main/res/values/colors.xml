@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs de l'icône de lancement (ne pas supprimer : utilisées par ic_launcher) -->
+    <color name="bleu_fonce">#0D1B3E</color>
+    <color name="bleu_nuit">#0A1530</color>
+    <color name="jaune">#FFD24A</color>
+    <color name="blanc">#EAF0FF</color>
+
+    <!-- Thème Pokédex (legacy, conservé pour compat) -->
+    <color name="rouge_pokedex">#D61F0C</color>
+    <color name="rouge_dark">#9C1608</color>
+    <color name="fond_blanc">#FFFFFF</color>
+    <color name="texte_sombre">#1C1C22</color>
+    <color name="gris">#8A8A96</color>
+
+    <!-- ===================== DESIGN SYSTEM « BESTIA » ===================== -->
+    <!-- Rouge emblématique -->
+    <color name="rouge_clair">#FF5B48</color>
+    <color name="rouge">#D61F0C</color>
+    <color name="rouge_fonce">#9C1608</color>
+    <color name="rouge_ombre">#7E1206</color>
+
+    <!-- Accents -->
+    <color name="or">#FFD34D</color>
+    <color name="or_clair">#FFE06A</color>
+    <color name="or_btn">#FFC94D</color>
+    <color name="or_btn2">#E6A01F</color>
+    <color name="or_ombre">#A06F10</color>
+    <color name="bleu_clair">#5AA9F0</color>
+    <color name="bleu">#2B6FD6</color>
+    <color name="bleu_ombre">#1A4A96</color>
+    <color name="vert">#36973F</color>
+    <color name="vert_clair">#7BE08A</color>
+
+    <!-- Surfaces sombres -->
+    <color name="nuit">#15151C</color>
+    <color name="nuit2">#0D0D12</color>
+    <color name="panneau">#1D1D26</color>
+    <color name="panneau_haut">#22222E</color>
+    <color name="bord">#2E2E3A</color>
+    <color name="bord2">#34343F</color>
+    <color name="journal">#0D0D13</color>
+    <color name="gris_btn">#54545F</color>
+    <color name="gris_btn2">#33333C</color>
+    <color name="gris_btn_ombre">#1C1C22</color>
+
+    <!-- Surfaces claires -->
+    <color name="ecran">#EEF0F4</color>
+    <color name="carte">#FBFBFD</color>
+    <color name="tuile">#F6F6FA</color>
+    <color name="tuile_bord">#ECECF2</color>
+    <color name="piste">#E7E7EF</color>
+    <color name="recherche_bord">#E1E1EA</color>
+    <color name="indicateur">#C4C4CE</color>
+
+    <!-- Textes -->
+    <color name="encre">#1C1C22</color>
+    <color name="encre2">#23232C</color>
+    <color name="gris1">#55555F</color>
+    <color name="gris2">#6A6A74</color>
+    <color name="gris3">#8A8A96</color>
+    <color name="gris4">#9A9AA6</color>
+    <color name="gris5">#A0A0AC</color>
+
+    <!-- Ombres de boutons 3D -->
+    <color name="ombre_blanc">#C4C4D0</color>
+    <color name="ombre_star">#C9C98A</color>
+    <color name="star_clair">#FFFFFF</color>
+    <color name="star_fond">#EEF0A0</color>
+
+    <!-- Écran LCD (jauges de combat) -->
+    <color name="lcd_fond">#2C3322</color>
+    <color name="lcd_bord">#1A1F14</color>
+    <color name="lcd_piste">#161A10</color>
+    <color name="lcd_nom">#E6F0D6</color>
+    <color name="lcd_label">#9FB886</color>
+    <color name="lcd_pv">#FFD34D</color>
+    <color name="lcd_vert">#7BE08A</color>
+</resources>

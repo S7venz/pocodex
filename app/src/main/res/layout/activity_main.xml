@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ecran"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <!-- ===== Barre rouge « POKÉDEX » ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_topbar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="14dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/bungee"
+            android:letterSpacing="0.02"
+            android:shadowColor="@color/rouge_fonce"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="0.01"
+            android:text="POKÉDEX"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp" />
+
+        <ImageButton
+            android:id="@+id/btnFavoris"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="9dp"
+            android:background="@drawable/bg_circle_btn"
+            android:contentDescription="@string/favoris"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_star_border"
+            app:tint="@color/or" />
+
+        <ImageButton
+            android:id="@+id/btnEquipe"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="9dp"
+            android:background="@drawable/bg_circle_btn"
+            android:contentDescription="@string/equipe_titre"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_team"
+            app:tint="#FFFFFF" />
+
+        <ImageButton
+            android:id="@+id/btnOnline"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="9dp"
+            android:background="@drawable/bg_circle_btn"
+            android:contentDescription="@string/online_titre"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_online"
+            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- ===== Recherche ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="14dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_recherche"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="13dp"
+        android:paddingEnd="13dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_search" />
+
+        <EditText
+            android:id="@+id/editRecherche"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="9dp"
+            android:background="@null"
+            android:fontFamily="@font/outfit"
+            android:hint="@string/recherche_hint"
+            android:imeOptions="actionSearch"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingVertical="11dp"
+            android:textColor="@color/encre"
+            android:textColorHint="@color/gris4"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="8dp"
+            android:paddingBottom="10dp" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/rouge" />
+
+        <TextView
+            android:id="@+id/messageVide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="24dp"
+            android:fontFamily="@font/baloo2_bold"
+            android:gravity="center"
+            android:textColor="@color/gris2"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

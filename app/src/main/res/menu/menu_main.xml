@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_online"
+        android:icon="@drawable/ic_online"
+        android:title="@string/online_titre"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_equipe"
+        android:icon="@drawable/ic_team"
+        android:title="@string/equipe_titre"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_favoris"
+        android:icon="@drawable/ic_star_border"
+        android:title="@string/favoris"
+        app:showAsAction="always" />
+</menu>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pokédex</string>
+
+    <string name="recherche_hint">Rechercher un Pokémon…</string>
+    <string name="favoris">Favoris</string>
+
+    <string name="statistiques">Statistiques</string>
+    <string name="favori_ajouter">Ajouter aux favoris</string>
+    <string name="favori_retirer">Retirer des favoris</string>
+
+    <string name="combattre">⚔️ Combattre</string>
+    <string name="combat_titre">Combat</string>
+
+    <string name="equipe_titre">Mon Équipe</string>
+    <string name="equipe_ajouter">Ajouter à l\'équipe</string>
+    <string name="equipe_retirer">Retirer de l\'équipe</string>
+    <string name="equipe_pleine">Équipe pleine (6 max)</string>
+    <string name="equipe_vide">Ton équipe est vide.\nAjoute des Pokémon depuis leur fiche (bouton « Ajouter à l\'équipe »).</string>
+    <string name="combattre_equipe">⚔️ Combattre avec l\'équipe</string>
+    <string name="retirer">Retirer</string>
+
+    <string name="online_titre">Combat en ligne</string>
+    <string name="online_explication">Crée une partie et partage le code, ou rejoins la partie d\'un ami avec son code. Ton 1er Pokémon d\'équipe combat (Pikachu par défaut).</string>
+    <string name="online_creer">Créer une partie</string>
+    <string name="online_rejoindre">Rejoindre</string>
+    <string name="online_code_hint">CODE</string>
+
+    <string name="erreur_reseau">Pas de connexion — vérifie ta connexion Internet.</string>
+    <string name="aucun_resultat">Aucun Pokémon trouvé.</string>
+    <string name="aucun_favori">Aucun favori pour l\'instant. Ajoute-en depuis une fiche !</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.PetitSinge" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/rouge</item>
+        <item name="colorPrimaryVariant">@color/rouge_fonce</item>
+        <item name="colorOnPrimary">@color/fond_blanc</item>
+        <item name="colorSecondary">@color/bleu</item>
+        <item name="colorOnSecondary">@color/fond_blanc</item>
+        <item name="android:statusBarColor">@color/rouge</item>
+        <item name="android:windowBackground">@color/ecran</item>
+        <!-- Police par défaut : Outfit (corps) -->
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="fontFamily">@font/outfit</item>
+    </style>
+</resources>

@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Banane -->
+    <path
+        android:fillColor="#FFD24A"
+        android:pathData="M76,28 C86,40 86,64 68,79 C57,88 41,88 30,80 C42,83 56,81 64,73 C74,63 74,46 69,35 C71,32 73,30 76,28 Z" />
+    <!-- Pédoncule -->
+    <path
+        android:fillColor="#6B4A2B"
+        android:pathData="M76,28 L80,21 L84,23 L80,31 Z" />
+</vector>

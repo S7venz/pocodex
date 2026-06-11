@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===================== TYPOGRAPHIE ===================== -->
+    <style name="Police" />
+
+    <!-- Bungee : display blocky (titres) -->
+    <style name="Police.Display">
+        <item name="android:fontFamily">@font/bungee</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Press Start 2P : accents pixel (numéros, micro-labels) -->
+    <style name="Police.Pixel">
+        <item name="android:fontFamily">@font/press_start_2p</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Baloo 2 : UI chunky -->
+    <style name="Police.UI">
+        <item name="android:fontFamily">@font/baloo2_bold</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Police.UIBlack">
+        <item name="android:fontFamily">@font/baloo2_black</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Outfit : corps de texte -->
+    <style name="Police.Body">
+        <item name="android:fontFamily">@font/outfit</item>
+    </style>
+
+    <style name="Police.BodyMed">
+        <item name="android:fontFamily">@font/outfit_medium</item>
+    </style>
+
+</resources>
