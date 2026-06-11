@@ -9,8 +9,9 @@
 .externalNativeBuild
 .cxx
 
-# Built artifacts
+# Built artifacts (sauf l'APK publié à la racine)
 *.apk
+!/PoCodex.apk
 *.aab
 *.ap_
 *.aar

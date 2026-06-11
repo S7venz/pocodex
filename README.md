@@ -4,6 +4,8 @@
 
 > Les 151 Pokémon de la 1ʳᵉ génération, leurs infos et leurs artworks sont **embarqués dans l'app** : tout reste visible même sans connexion.
 
+**📲 Installer :** télécharge [`PoCodex.apk`](PoCodex.apk) (~23 Mo), ouvre-le sur ton téléphone Android et autorise l'installation depuis « sources inconnues ».
+
 ---
 
 ## ✨ Fonctionnalités
