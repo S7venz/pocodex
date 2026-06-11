@@ -18,7 +18,7 @@ data class Pokemon(
     val numero: String get() = "#%03d".format(id)
     val typePrincipal: String get() = types.firstOrNull() ?: "normal"
     val artworkUrl: String
-        get() = "https://raw.githubusercontent.com/Purukitto/pokemon-data.json/master/images/pokedex/hires/%03d.png".format(id)
+        get() = "file:///android_asset/artwork/%03d.png".format(id)
 }
 
 fun PokemonDto.toPokemon(): Pokemon = Pokemon(
