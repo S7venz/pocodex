@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.s7venz.pocodex"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.s7venz.pocodex"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

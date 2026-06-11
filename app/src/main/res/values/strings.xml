@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Pokédex</string>
+    <string name="app_name">PoCodex</string>
 
     <string name="recherche_hint">Rechercher un Pokémon…</string>
     <string name="favoris">Favoris</string>
