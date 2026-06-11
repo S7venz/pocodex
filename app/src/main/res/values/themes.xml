@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.PetitSinge" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="Theme.PoCodex" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/rouge</item>
         <item name="colorPrimaryVariant">@color/rouge_fonce</item>
         <item name="colorOnPrimary">@color/fond_blanc</item>

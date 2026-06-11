@@ -3,12 +3,29 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Banane -->
+    <!-- Poké Ball — moitié basse blanche -->
     <path
-        android:fillColor="#FFD24A"
-        android:pathData="M76,28 C86,40 86,64 68,79 C57,88 41,88 30,80 C42,83 56,81 64,73 C74,63 74,46 69,35 C71,32 73,30 76,28 Z" />
-    <!-- Pédoncule -->
+        android:fillColor="#FFFFFF"
+        android:pathData="M21,54 a33,33 0 1,1 66,0 a33,33 0 1,1 -66,0 Z" />
+    <!-- Moitié haute rouge -->
     <path
-        android:fillColor="#6B4A2B"
-        android:pathData="M76,28 L80,21 L84,23 L80,31 Z" />
+        android:fillColor="#E3350D"
+        android:pathData="M21,54 A33,33 0 0 1 87,54 Z" />
+    <!-- Bande centrale -->
+    <path
+        android:fillColor="#181820"
+        android:pathData="M22,50 L86,50 L86,58 L22,58 Z" />
+    <!-- Contour de la bille -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#181820"
+        android:strokeWidth="2.5"
+        android:pathData="M21,54 a33,33 0 1,1 66,0 a33,33 0 1,1 -66,0 Z" />
+    <!-- Bouton central -->
+    <path
+        android:fillColor="#181820"
+        android:pathData="M43,54 a11,11 0 1,1 22,0 a11,11 0 1,1 -22,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,54 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0 Z" />
 </vector>
