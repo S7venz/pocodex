@@ -24,9 +24,11 @@ import com.s7venz.pocodex.data.PokedexRepository
 import com.s7venz.pocodex.online.Reseau
 import com.s7venz.pocodex.ui.TypeColors
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 class OnlineCombatActivity : AppCompatActivity() {
@@ -49,6 +51,12 @@ class OnlineCombatActivity : AppCompatActivity() {
     private val vus = HashSet<String>()
     private val tampon = mutableListOf<String>()
 
+    // Fiabilité réseau
+    private var mid = ""                     // identifiant de match (anti-collision sur topic public)
+    private var seqVu = -1                    // dernier seq d'état appliqué (invité)
+    private var coupEnAttente = -1           // coup invité en attente d'accusé (pour renvoi)
+    private var dernierEtat: String? = null  // dernier état publié (hôte) — pour re-diffusion
+
     private val estHote get() = role == ROLE_HOST
     private val monCamp get() = if (estHote) "host" else "guest"
 
@@ -64,6 +72,8 @@ class OnlineCombatActivity : AppCompatActivity() {
         code = intent.getStringExtra(EXTRA_CODE) ?: "????"
         monId = intent.getIntExtra(EXTRA_MONID, 25)
         topic = "pkmncombatv2_$code"
+        // Session fraîche : on ignore l'historique du topic (parties précédentes sur le code).
+        lastTime = System.currentTimeMillis() / 1000 - 5
         android.util.Log.i("PokeOnline", "topic=$topic role=$role monId=$monId")
 
         findViewById<ProgressBar>(R.id.combatProgress).isVisible = true
@@ -77,7 +87,7 @@ class OnlineCombatActivity : AppCompatActivity() {
                     log("Partie créée ! Code : $code")
                     log("Partage ce code et attends ton adversaire…")
                 } else {
-                    Reseau.publier(topic, """{"k":"join","id":${moi.id}}""")
+                    envoyer(joinPayload())
                     log("Connexion à la partie $code …")
                 }
                 afficherAttente(if (estHote) "Code : $code — en attente…" else "Connexion…")
@@ -86,7 +96,8 @@ class OnlineCombatActivity : AppCompatActivity() {
             } finally {
                 findViewById<ProgressBar>(R.id.combatProgress).isVisible = false
             }
-            boucleReseau()
+            ecouterBoucle()
+            tickRetransmission()
         }
     }
 
@@ -95,24 +106,70 @@ class OnlineCombatActivity : AppCompatActivity() {
         return true
     }
 
-    private fun boucleReseau() {
+    override fun onDestroy() {
+        super.onDestroy()
+        Reseau.couper()
+    }
+
+    /** Réception en streaming (connexion longue) + reconnexion automatique. */
+    private fun ecouterBoucle() {
         lifecycleScope.launch {
             while (isActive && !isFinishing && !fini) {
-                val msgs = runCatching { Reseau.lire(topic, lastTime) }.getOrDefault(emptyList())
-                for (m in msgs) {
-                    if (m.time > lastTime) lastTime = m.time
-                    if (vus.add(m.id)) runCatching { traiter(m.payload) }
-                }
-                delay(1200)
+                runCatching {
+                    Reseau.ecouter(topic, lastTime) { m ->
+                        if (m.time > lastTime) lastTime = m.time
+                        if (vus.add(m.id)) withContext(Dispatchers.Main) { traiter(m.payload) }
+                    }
+                }.onFailure { android.util.Log.w("PokeOnline", "flux KO: $it") }
+                if (isActive && !isFinishing && !fini) delay(1500) // flux coupé : on reconnecte
             }
         }
+    }
+
+    /** Retransmissions périodiques : anti-perte de message (join / coup / état). */
+    private fun tickRetransmission() {
+        lifecycleScope.launch {
+            while (isActive && !isFinishing && !fini) {
+                delay(4000)
+                renvoyerSiNecessaire()
+            }
+        }
+    }
+
+    private fun renvoyerSiNecessaire() {
+        when {
+            fini -> {}
+            !estHote && !enJeu -> envoyer(joinPayload())                          // pas encore en jeu → on (re)rejoint
+            !estHote && tour == "guest" && coupEnAttente >= 0 ->
+                envoyer(actPayload(coupEnAttente))                               // notre coup n'a pas été accusé → on le renvoie
+            !estHote && enJeu && tour == "host" -> envoyer(joinPayload())         // on attend l'hôte → on le relance (resync)
+            estHote && enJeu && tour == "guest" -> dernierEtat?.let { envoyer(it) } // l'invité doit jouer → on rediffuse l'état
+        }
+    }
+
+    private fun joinPayload() = """{"k":"join","id":${moi.id}}"""
+
+    private fun actPayload(moveIdx: Int) =
+        JSONObject().put("k", "act").put("seq", seq).put("move", moveIdx).put("mid", mid).toString()
+
+    private fun envoyer(payload: String) {
+        lifecycleScope.launch { Reseau.publier(topic, payload) }
+    }
+
+    private fun randomMid(): String {
+        val c = "abcdefghijklmnopqrstuvwxyz0123456789"
+        return (1..6).map { c.random() }.joinToString("")
     }
 
     private suspend fun traiter(payload: String) {
         val o = runCatching { JSONObject(payload) }.getOrNull() ?: return
         when (o.optString("k")) {
-            "join" -> if (estHote && adv == null) demarrerHote(o.optInt("id"))
-            "act" -> if (estHote && enJeu && tour == "guest" && !enCours && o.optInt("seq") == seq) {
+            "join" -> when {
+                estHote && adv == null -> demarrerHote(o.optInt("id"))
+                estHote && adv != null -> dernierEtat?.let { envoyer(it) }   // invité qui re-rejoint → on lui renvoie l'état
+            }
+            "act" -> if (estHote && enJeu && tour == "guest" && !enCours &&
+                o.optInt("seq") == seq && o.optString("mid") == mid) {
                 recevoirActionInvite(o.optInt("move"))
             }
             "state" -> if (!estHote) appliquerEtat(o)
@@ -125,6 +182,7 @@ class OnlineCombatActivity : AppCompatActivity() {
         adv = MoteurCombat.depuisPokemon(PokedexRepository.parId(advId) ?: PokedexRepository.tous().first())
         bindAdv()
         enJeu = true
+        mid = randomMid()
         tour = if (moi.vitesse >= adv!!.vitesse) "host" else "guest"
         seq = 1
         log("${adv!!.nom} a rejoint le combat !")
@@ -183,17 +241,28 @@ class OnlineCombatActivity : AppCompatActivity() {
     private fun publierEtat(msg: String) {
         val a = adv ?: return
         val o = JSONObject()
-        o.put("k", "state"); o.put("seq", seq); o.put("tour", tour)
+        o.put("k", "state"); o.put("mid", mid); o.put("seq", seq); o.put("tour", tour)
         o.put("fini", fini); o.put("vainqueur", if (fini) (if (!moi.enVie) "guest" else "host") else "")
         o.put("h", objCombattant(moi))  // l'hôte est "h"
         o.put("g", objCombattant(a))
         o.put("msg", msg)
-        lifecycleScope.launch { Reseau.publier(topic, o.toString()) }
+        dernierEtat = o.toString()
+        lifecycleScope.launch { Reseau.publier(topic, dernierEtat!!) }
     }
 
     // ---------- Côté INVITÉ (affichage) ----------
 
     private suspend fun appliquerEtat(o: JSONObject) {
+        // Match : on adopte l'identifiant de l'hôte, puis on ignore les autres parties du topic.
+        val mEtat = o.optString("mid")
+        if (mid.isEmpty()) mid = mEtat
+        if (mid.isNotEmpty() && mEtat != mid) return
+        // Anti-doublon : un état déjà appliqué (re-diffusion) est ignoré.
+        val s = o.optInt("seq")
+        if (s <= seqVu) return
+        seqVu = s
+        coupEnAttente = -1  // l'hôte a fait avancer la partie → notre coup est accusé
+
         val h = o.getJSONObject("h")
         val g = o.getJSONObject("g")
         if (adv == null) {
@@ -216,15 +285,16 @@ class OnlineCombatActivity : AppCompatActivity() {
         majBarres()
         majChips()
 
-        seq = o.optInt("seq"); tour = o.optString("tour")
+        seq = s; tour = o.optString("tour")
         if (o.optBoolean("fini")) finPartie(o.optString("vainqueur")) else { enCours = false; majTour() }
     }
 
     private fun jouerCoupInvite(moveIdx: Int) {
         enCours = true
+        coupEnAttente = moveIdx
         log("Tu choisis ${moi.attaques[moveIdx].nom}…")
         afficherAttente("En attente de l'hôte…")
-        lifecycleScope.launch { Reseau.publier(topic, """{"k":"act","seq":$seq,"move":$moveIdx}""") }
+        envoyer(actPayload(moveIdx))
     }
 
     // ---------- UI commune ----------

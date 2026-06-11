@@ -44,8 +44,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Combat en ligne : OkHttp (ntfy.sh) + Gson (lecture du pokédex local hors-ligne)
+    // Combat en ligne : OkHttp + DNS-over-HTTPS (résolution résiliente) + Gson (pokédex local)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
 
     // Chargement d'images (artworks embarqués dans assets/)
