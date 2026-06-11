@@ -8,6 +8,18 @@
 
 ---
 
+## 📸 Aperçu
+
+| Accueil · Codex | Fiche · Feu | Fiche · Eau |
+|:---:|:---:|:---:|
+| <img src="maquettes/01_home.png" width="240"> | <img src="maquettes/02_detail_feu.png" width="240"> | <img src="maquettes/03_detail_eau.png" width="240"> |
+| **Mon Équipe** | **Arène de combat** | **Combat en ligne** |
+| <img src="maquettes/04_equipe.png" width="240"> | <img src="maquettes/05_arene.png" width="240"> | <img src="maquettes/06_lobby.png" width="240"> |
+
+> Planche complète façon Figma : [`maquettes/board.html`](maquettes/board.html) (à ouvrir dans un navigateur).
+
+---
+
 ## ✨ Fonctionnalités
 
 | | |
