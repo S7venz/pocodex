@@ -1,12 +1,18 @@
 package com.s7venz.pocodex.data
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.s7venz.pocodex.PokeApp
 import com.s7venz.pocodex.model.Pokemon
+import com.s7venz.pocodex.model.PokemonDto
 import com.s7venz.pocodex.model.toPokemon
-import com.s7venz.pocodex.network.ApiClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Source unique des Pokémon : télécharge la liste UNE fois puis la garde en cache.
- * Les écrans (liste, fiche, combat) lisent ici sans refaire d'appel réseau.
+ * Source unique des Pokémon : tout est embarqué dans l'app (assets/pokedex.json).
+ * Aucune connexion requise — les Pokémon restent visibles même hors-ligne.
+ * La liste est lue UNE fois puis gardée en cache.
  */
 object PokedexRepository {
 
@@ -14,10 +20,17 @@ object PokedexRepository {
 
     suspend fun tous(): List<Pokemon> {
         if (cache.isEmpty()) {
-            cache = ApiClient.pokeApi.getPokedex()
-                .filter { it.id in 1..151 && it.base != null }
-                .map { it.toPokemon() }
-                .sortedBy { it.id }
+            cache = withContext(Dispatchers.IO) {
+                val json = PokeApp.instance.assets
+                    .open("pokedex.json")
+                    .bufferedReader()
+                    .use { it.readText() }
+                val type = object : TypeToken<List<PokemonDto>>() {}.type
+                Gson().fromJson<List<PokemonDto>>(json, type)
+                    .filter { it.id in 1..151 && it.base != null }
+                    .map { it.toPokemon() }
+                    .sortedBy { it.id }
+            }
         }
         return cache
     }

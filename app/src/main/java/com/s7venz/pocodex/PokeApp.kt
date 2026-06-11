@@ -6,13 +6,24 @@ import coil.ImageLoaderFactory
 import com.s7venz.pocodex.network.Network
 
 /**
- * Classe Application : configure Coil pour qu'il charge les images
- * avec le même client OkHttp (IPv4) que Retrofit.
+ * Classe Application : expose un contexte global (lecture des assets hors-ligne)
+ * et configure Coil avec le même client OkHttp (IPv4) — utilisé pour le combat en ligne.
  */
 class PokeApp : Application(), ImageLoaderFactory {
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
     override fun newImageLoader(): ImageLoader =
         ImageLoader.Builder(this)
             .okHttpClient(Network.client)
             .crossfade(true)
             .build()
+
+    companion object {
+        lateinit var instance: PokeApp
+            private set
+    }
 }

@@ -44,12 +44,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Réseau : Retrofit + Gson pour appeler la PokéAPI
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    // Combat en ligne : OkHttp (ntfy.sh) + Gson (lecture du pokédex local hors-ligne)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
 
-    // Chargement d'images (sprites des Pokémon)
+    // Chargement d'images (artworks embarqués dans assets/)
     implementation("io.coil-kt:coil:2.7.0")
 
     // Base de données locale (Room / SQLite)
