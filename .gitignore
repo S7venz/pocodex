@@ -9,7 +9,7 @@
 .externalNativeBuild
 .cxx
 
-# Built artifacts
+# Built artifacts (l'APK est distribué via les GitHub Releases)
 *.apk
 *.aab
 *.ap_
