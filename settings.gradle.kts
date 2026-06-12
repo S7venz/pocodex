@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "PoCodex"
 include(":app")
+include(":serveur")

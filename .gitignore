@@ -5,7 +5,11 @@
 .DS_Store
 /build
 /app/build
+/serveur/build
 /captures
+
+# Base SQLite du serveur (db + journaux WAL/SHM) — jamais committée
+/serveur/*.db*
 .externalNativeBuild
 .cxx
 

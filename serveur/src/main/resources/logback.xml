@@ -1,0 +1,15 @@
+<configuration>
+    <!-- Journalisation console simple pour le serveur PoCodex. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Netty est bavard au niveau DEBUG : on le limite. -->
+    <logger name="io.netty" level="WARN"/>
+</configuration>
