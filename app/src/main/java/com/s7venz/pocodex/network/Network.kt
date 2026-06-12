@@ -10,11 +10,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
- * Client OkHttp partagé (combat en ligne ntfy.sh + Coil).
+ * Client OkHttp partagé (REST + WebSocket du serveur PoCodex, et Coil).
  *
  * Résolution DNS résiliente :
  *  1) résolveur système, filtré IPv4 et borné à 2 s (instantané sur un vrai téléphone ;
- *     l'émulateur traîne ou échoue parfois — ex. ntfy.sh : UnknownHostException) ;
+ *     l'émulateur traîne ou échoue parfois — UnknownHostException) ;
  *  2) repli en DNS-over-HTTPS (Cloudflare) si le système échoue ou expire.
  *
  * Sur un vrai téléphone, le DNS système répond tout de suite : le repli DoH ne sert jamais.

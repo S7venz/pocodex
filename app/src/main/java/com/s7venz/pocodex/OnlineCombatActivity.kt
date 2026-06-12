@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -21,21 +22,31 @@ import com.s7venz.pocodex.combat.Combattant
 import com.s7venz.pocodex.combat.MoteurCombat
 import com.s7venz.pocodex.combat.Statut
 import com.s7venz.pocodex.data.PokedexRepository
-import com.s7venz.pocodex.online.Reseau
+import com.s7venz.pocodex.online.ClientWs
 import com.s7venz.pocodex.ui.TypeColors
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
+/**
+ * Combat en ligne branché sur NOTRE serveur PoCodex (WebSocket, host-authoritative).
+ *
+ * Le transport ([ClientWs]) remplace l'ancien relai ntfy.sh : le serveur gère
+ * l'appariement (création / arrivée de l'invité), relaie l'état (`etat`) et le coup
+ * (`act`) tels quels, et clôture la partie (ELO). Plus aucune retransmission ni
+ * déduplication côté client : le contrat est dans `serveur/PROTOCOLE.md`.
+ *
+ * - HÔTE (autoritaire) : envoie `creer`, reçoit `salle` (code) puis `join` (l'invité
+ *   arrive), fait tourner le moteur et diffuse l'`etat`. À la fin, envoie `fin`.
+ * - INVITÉ : envoie `rejoindre` (code + son Pokémon), reçoit `infos` (l'adversaire),
+ *   applique chaque `etat` reçu et renvoie son `act`.
+ * - Les deux : `classement` met à jour le compte (ELO, V/D) et le dialogue de fin ;
+ *   `deco`/`erreur` sont journalisés ; une fermeture inattendue ramène à l'accueil.
+ */
 class OnlineCombatActivity : AppCompatActivity() {
 
     private lateinit var role: String
     private lateinit var code: String
-    private lateinit var topic: String
     private var monId = 25
 
     private lateinit var moi: Combattant
@@ -47,19 +58,10 @@ class OnlineCombatActivity : AppCompatActivity() {
     private var enCours = false
     private var enJeu = false
 
-    private var lastTime = 0L
-    private val vus = HashSet<String>()
+    private var seqVu = -1                    // dernier seq d'état appliqué (invité) — idempotence
+    private var demarrageHote = false         // démarrage hôte en cours (anti double-join)
+    private var finAffichee = false           // dialogue de fin déjà affiché (anti double-dialogue)
     private val tampon = mutableListOf<String>()
-
-    // Fiabilité réseau
-    private var mid = ""                     // identifiant de match (anti-collision sur topic public)
-    private var seqVu = -1                    // dernier seq d'état appliqué (invité)
-    private var coupEnAttente = -1           // coup invité en attente d'accusé (pour renvoi)
-    private var dernierEtat: String? = null  // dernier état publié (hôte) — pour re-diffusion
-    private var demarrageHote = false        // démarrage hôte en cours (anti double-join pendant la suspension)
-    private var finAffichee = false          // dialogue de fin déjà affiché (anti double-dialogue)
-    private var echecsEnvoi = 0              // échecs d'envoi consécutifs (alerte "connexion instable")
-    private var delaiRetrans = 3000L         // délai courant entre retransmissions (backoff jusqu'à 12 s)
 
     private val estHote get() = role == ROLE_HOST
     private val monCamp get() = if (estHote) "host" else "guest"
@@ -73,36 +75,25 @@ class OnlineCombatActivity : AppCompatActivity() {
         window.statusBarColor = 0xFF2A2D3A.toInt()
 
         role = intent.getStringExtra(EXTRA_ROLE) ?: ROLE_HOST
-        code = intent.getStringExtra(EXTRA_CODE) ?: "????"
+        code = intent.getStringExtra(EXTRA_CODE) ?: ""
         monId = intent.getIntExtra(EXTRA_MONID, 25)
-        topic = "pkmncombatv2_$code"
-        Reseau.ouvrir()  // rouvre proprement la couche réseau (au cas où une partie précédente l'a fermée)
-        // Session fraîche : on ignore l'historique du topic (parties précédentes sur le code).
-        lastTime = System.currentTimeMillis() / 1000 - 5
-        android.util.Log.i("PokeOnline", "topic=$topic role=$role monId=$monId")
+        android.util.Log.i("PokeOnline", "role=$role code=$code monId=$monId")
 
         findViewById<ProgressBar>(R.id.combatProgress).isVisible = true
         findViewById<TextView>(R.id.advNom).text = "…"
 
         lifecycleScope.launch {
-            try {
-                moi = MoteurCombat.depuisPokemon(PokedexRepository.parId(monId) ?: PokedexRepository.tous().first())
-                bindMoi()
-                if (estHote) {
-                    log("Partie créée ! Code : $code")
-                    log("Partage ce code et attends ton adversaire…")
-                } else {
-                    envoyer(joinPayload())
-                    log("Connexion à la partie $code …")
-                }
-                afficherAttente(if (estHote) "Code : $code — en attente…" else "Connexion…")
-            } catch (e: Exception) {
-                log("Erreur réseau.")
-            } finally {
-                findViewById<ProgressBar>(R.id.combatProgress).isVisible = false
+            moi = MoteurCombat.depuisPokemon(PokedexRepository.parId(monId) ?: PokedexRepository.tous().first())
+            bindMoi()
+            findViewById<ProgressBar>(R.id.combatProgress).isVisible = false
+            if (estHote) {
+                log("Connexion au serveur…")
+                afficherAttente("Connexion…")
+            } else {
+                log("Connexion à la partie $code …")
+                afficherAttente("Connexion…")
             }
-            ecouterBoucle()
-            tickRetransmission()
+            connecter()
         }
     }
 
@@ -113,106 +104,112 @@ class OnlineCombatActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Reseau.couper()
+        ClientWs.fermer()
     }
 
-    /** Réception en streaming (connexion longue) + reconnexion automatique. */
-    private fun ecouterBoucle() {
-        lifecycleScope.launch {
-            while (isActive && !isFinishing && !fini) {
-                runCatching {
-                    Reseau.ecouter(topic, lastTime) { m ->
-                        if (m.time > lastTime) lastTime = m.time
-                        if (vus.add(m.id)) withContext(Dispatchers.Main) { traiter(m.payload) }
-                    }
-                }.onFailure { android.util.Log.w("PokeOnline", "flux KO: $it") }
-                if (isActive && !isFinishing && !fini) delay(1500) // flux coupé : on reconnecte
-            }
+    /** Ouvre la connexion WebSocket et envoie le 1ᵉʳ message (creer / rejoindre). */
+    private fun connecter() {
+        ClientWs.connecter(
+            serveur = Compte.serveur,
+            jeton = Compte.jeton,
+            surMessage = { o -> traiter(o) },
+            surFermeture = { raison -> surFermeture(raison) },
+        )
+        // OkHttp met en file les messages tant que le socket n'est pas ouvert : on peut
+        // envoyer le 1ᵉʳ message tout de suite, il partira dès l'ouverture.
+        if (estHote) {
+            ClientWs.envoyer(JSONObject().put("k", "creer"))
+        } else {
+            ClientWs.envoyer(JSONObject().put("k", "rejoindre").put("code", code).put("pokemon", monId))
         }
     }
 
-    /** Retransmissions périodiques : anti-perte de message (join / coup / état), avec backoff progressif. */
-    private fun tickRetransmission() {
-        lifecycleScope.launch {
-            while (isActive && !isFinishing && !fini) {
-                delay(delaiRetrans)
-                renvoyerSiNecessaire()
-                delaiRetrans = (delaiRetrans * 3 / 2).coerceAtMost(12_000L)
-            }
-        }
+    /** Une fermeture inattendue (avant la fin de partie) ramène à l'accueil. */
+    private fun surFermeture(raison: String) {
+        android.util.Log.w("PokeOnline", "WS fermé : $raison")
+        if (isFinishing || fini || finAffichee) return
+        finAffichee = true
+        AlertDialog.Builder(this)
+            .setTitle("Déconnexion")
+            .setMessage("Connexion au serveur perdue.")
+            .setCancelable(false)
+            .setPositiveButton("Retour") { _, _ -> finish() }
+            .show()
     }
 
-    private fun renvoyerSiNecessaire() {
-        when {
-            fini -> {}
-            !estHote && !enJeu -> envoyer(joinPayload())                          // pas encore en jeu → on (re)rejoint
-            !estHote && tour == "guest" && coupEnAttente >= 0 ->
-                envoyer(actPayload(coupEnAttente))                               // notre coup n'a pas été accusé → on le renvoie
-            !estHote && enJeu && tour == "host" -> envoyer(joinPayload())         // on attend l'hôte → on le relance (resync)
-            estHote && enJeu && tour == "guest" -> dernierEtat?.let { envoyer(it) } // l'invité doit jouer → on rediffuse l'état
-        }
-    }
-
-    private fun joinPayload() = """{"k":"join","id":${moi.id}}"""
-
-    private fun actPayload(moveIdx: Int) =
-        JSONObject().put("k", "act").put("seq", seq).put("move", moveIdx).put("mid", mid).toString()
-
-    private fun envoyer(payload: String) {
-        lifecycleScope.launch {
-            val ok = Reseau.publier(topic, payload)
-            if (ok) {
-                if (echecsEnvoi >= 2) log("Connexion rétablie.")
-                echecsEnvoi = 0
-            } else {
-                echecsEnvoi++
-                if (echecsEnvoi == 2) log("⚠ Connexion instable — vérifie ton réseau.")
-            }
-        }
-    }
-
-    private fun randomMid(): String {
-        val c = "abcdefghijklmnopqrstuvwxyz0123456789"
-        return (1..6).map { c.random() }.joinToString("")
-    }
-
-    private suspend fun traiter(payload: String) {
-        val o = runCatching { JSONObject(payload) }.getOrNull() ?: return
-        delaiRetrans = 3000L  // message pertinent reçu → on remet le backoff de retransmission à zéro
+    /** Routeur des messages reçus du serveur (déjà sur le thread principal). */
+    private fun traiter(o: JSONObject) {
         when (o.optString("k")) {
-            "join" -> when {
-                estHote && adv == null && !demarrageHote -> demarrerHote(o.optInt("id"))
-                estHote && adv != null -> dernierEtat?.let { envoyer(it) }   // invité qui re-rejoint → on lui renvoie l'état
+            // --- Hôte ---
+            "salle" -> {
+                code = o.optString("code")
+                log("Partie créée ! Code : $code")
+                log("Partage ce code et attends ton adversaire…")
+                afficherAttente("Code : $code — en attente…")
             }
-            "act" -> if (estHote && enJeu && tour == "guest" && !enCours &&
-                o.optInt("seq") == seq && o.optString("mid") == mid) {
+            "join" -> if (estHote && adv == null && !demarrageHote) {
+                val pseudo = o.optString("pseudo").ifBlank { "Adversaire" }
+                val elo = o.optInt("elo", 1000)
+                lifecycleScope.launch {
+                    demarrerHote(o.optInt("id"))
+                    log("$pseudo (ELO $elo) a rejoint le combat !")
+                }
+            }
+            "act" -> if (estHote && enJeu && tour == "guest" && !enCours && o.optInt("seq") == seq) {
                 recevoirActionInvite(o.optInt("move"))
             }
-            "state" -> if (!estHote) appliquerEtat(o)
+            // --- Invité ---
+            "infos" -> if (!estHote) {
+                val a = o.optJSONObject("adversaire")
+                val pseudo = a?.optString("pseudo")?.ifBlank { "Adversaire" } ?: "Adversaire"
+                val elo = a?.optInt("elo", 1000) ?: 1000
+                log("Adversaire : $pseudo (ELO $elo)")
+            }
+            "etat" -> if (!estHote) lifecycleScope.launch { appliquerEtat(o) }
+            // --- Les deux ---
+            "classement" -> appliquerClassement(o)
+            "deco" -> log("L'adversaire s'est déconnecté.")
+            "erreur" -> {
+                val m = o.optString("message").ifBlank { "Erreur du serveur." }
+                Toast.makeText(this, m, Toast.LENGTH_LONG).show()
+                log("⚠ $m")
+            }
         }
+    }
+
+    /** Met à jour le compte local + le dialogue de fin avec le résultat classé. */
+    private fun appliquerClassement(o: JSONObject) {
+        val nouvelElo = o.optInt("elo", Compte.elo)
+        val delta = o.optInt("delta", 0)
+        val vainqueur = o.optString("vainqueur") // "hote" / "invite"
+        val jaiGagne = (estHote && vainqueur == "hote") || (!estHote && vainqueur == "invite")
+
+        Compte.elo = nouvelElo
+        if (jaiGagne) Compte.victoires += 1 else Compte.defaites += 1
+
+        val signe = if (delta >= 0) "+$delta" else "$delta"
+        finPartie(if (jaiGagne) "win" else "lose", classement = "$signe ELO ($nouvelElo)")
     }
 
     // ---------- Côté HÔTE (autoritaire) ----------
 
     private suspend fun demarrerHote(advId: Int) {
-        demarrageHote = true  // verrou avant toute suspension : empêche un 2ᵉ join de relancer le démarrage
+        demarrageHote = true  // verrou avant toute suspension : empêche un 2ᵉ join de relancer
         adv = MoteurCombat.depuisPokemon(PokedexRepository.parId(advId) ?: PokedexRepository.tous().first())
         bindAdv()
         enJeu = true
-        mid = randomMid()
         tour = if (moi.vitesse >= adv!!.vitesse) "host" else "guest"
         seq = 1
-        log("${adv!!.nom} a rejoint le combat !")
         publierEtat("Le combat commence !")
         majTour()
     }
 
-    private suspend fun recevoirActionInvite(moveIdx: Int) {
+    private fun recevoirActionInvite(moveIdx: Int) {
         enCours = true
         val a = adv ?: return
         val atk = a.attaques.getOrElse(moveIdx) { a.attaques.first() }
         resoudre(a, moi, atk, attaquantEstMoi = false)
-        if (!moi.enVie) { finirHote("guest"); return }
+        if (!moi.enVie) { finirHote(vainqueurEstHote = false); return }
         tour = "host"; seq++
         publierEtat(tampon.joinToString("\n")); tampon.clear()
         enCours = false
@@ -222,15 +219,13 @@ class OnlineCombatActivity : AppCompatActivity() {
     private fun jouerCoupHote(moveIdx: Int) {
         enCours = true
         afficherAttente("…")
-        lifecycleScope.launch {
-            val a = adv ?: return@launch
-            resoudre(moi, a, moi.attaques[moveIdx], attaquantEstMoi = true)
-            if (!a.enVie) { finirHote("host"); return@launch }
-            tour = "guest"; seq++
-            publierEtat(tampon.joinToString("\n")); tampon.clear()
-            enCours = false
-            majTour()
-        }
+        val a = adv ?: return
+        resoudre(moi, a, moi.attaques[moveIdx], attaquantEstMoi = true)
+        if (!a.enVie) { finirHote(vainqueurEstHote = true); return }
+        tour = "guest"; seq++
+        publierEtat(tampon.joinToString("\n")); tampon.clear()
+        enCours = false
+        majTour()
     }
 
     /** Calcul + application + animation locale (hôte uniquement). */
@@ -248,38 +243,33 @@ class OnlineCombatActivity : AppCompatActivity() {
         majBarres()
     }
 
-    private suspend fun finirHote(vainqueur: String) {
+    /** Fin de partie côté hôte : diffuse l'état final puis notifie le serveur (ELO). */
+    private fun finirHote(vainqueurEstHote: Boolean) {
         fini = true
         tour = "host"
         publierEtat(tampon.joinToString("\n")); tampon.clear()
-        finPartie(vainqueur)
+        ClientWs.envoyer(JSONObject().put("k", "fin").put("vainqueurEstHote", vainqueurEstHote))
+        // L'affichage du résultat (Victoire/Défaite + ELO) attend le `classement` du serveur.
     }
 
     private fun publierEtat(msg: String) {
         val a = adv ?: return
         val o = JSONObject()
-        o.put("k", "state"); o.put("mid", mid); o.put("seq", seq); o.put("tour", tour)
+        o.put("k", "etat"); o.put("seq", seq); o.put("tour", tour)
         o.put("fini", fini); o.put("vainqueur", if (fini) (if (!moi.enVie) "guest" else "host") else "")
         o.put("h", objCombattant(moi))  // l'hôte est "h"
         o.put("g", objCombattant(a))
         o.put("msg", msg)
-        val etat = o.toString()
-        dernierEtat = etat
-        lifecycleScope.launch { Reseau.publier(topic, etat) }
+        ClientWs.envoyer(o)
     }
 
     // ---------- Côté INVITÉ (affichage) ----------
 
     private suspend fun appliquerEtat(o: JSONObject) {
-        // Match : on adopte l'identifiant de l'hôte, puis on ignore les autres parties du topic.
-        val mEtat = o.optString("mid")
-        if (mid.isEmpty()) mid = mEtat
-        if (mid.isNotEmpty() && mEtat != mid) return
-        // Anti-doublon : un état déjà appliqué (re-diffusion) est ignoré.
+        // Idempotence : un état déjà appliqué (ré-émission) est ignoré.
         val s = o.optInt("seq")
         if (s <= seqVu) return
         seqVu = s
-        coupEnAttente = -1  // l'hôte a fait avancer la partie → notre coup est accusé
 
         val h = o.getJSONObject("h")
         val g = o.getJSONObject("g")
@@ -304,15 +294,22 @@ class OnlineCombatActivity : AppCompatActivity() {
         majChips()
 
         seq = s; tour = o.optString("tour")
-        if (o.optBoolean("fini")) finPartie(o.optString("vainqueur")) else { enCours = false; majTour() }
+        if (o.optBoolean("fini")) {
+            fini = true
+            findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
+            // L'animation de KO + le dialogue final (avec ELO) viennent du `classement`.
+            val perdant = o.optString("vainqueur")
+            if (perdant == monCamp) animerKo(findViewById(R.id.advSprite)) else animerKo(findViewById(R.id.joueurSprite))
+        } else {
+            enCours = false; majTour()
+        }
     }
 
     private fun jouerCoupInvite(moveIdx: Int) {
         enCours = true
-        coupEnAttente = moveIdx
         log("Tu choisis ${moi.attaques[moveIdx].nom}…")
         afficherAttente("En attente de l'hôte…")
-        envoyer(actPayload(moveIdx))
+        ClientWs.envoyer(JSONObject().put("k", "act").put("seq", seq).put("move", moveIdx))
     }
 
     // ---------- UI commune ----------
@@ -409,28 +406,30 @@ class OnlineCombatActivity : AppCompatActivity() {
         animerHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), moi)
     }
 
-    private fun finPartie(vainqueur: String) {
-        if (finAffichee) return  // écho d'un état fini=true (reconnexion) → on n'empile pas un 2ᵉ dialogue
+    /**
+     * Affiche le résultat de la partie. [issue] = "win"/"lose" ; [classement] =
+     * libellé ELO enrichi (« +16 ELO (1016) ») reçu du serveur, ou null.
+     */
+    private fun finPartie(issue: String, classement: String?) {
+        if (finAffichee) return  // anti double-dialogue (état fini + classement)
         finAffichee = true
         fini = true
         findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
-        if (vainqueur == monCamp) { animerKo(findViewById(R.id.advSprite)) } else { animerKo(findViewById(R.id.joueurSprite)) }
+        val jaiGagne = issue == "win"
+        // Au cas où l'animation de KO n'a pas déjà été déclenchée.
+        if (jaiGagne) animerKo(findViewById(R.id.advSprite)) else animerKo(findViewById(R.id.joueurSprite))
+        val titre = if (jaiGagne) "Victoire !" else "Défaite…"
+        val base = if (jaiGagne) "Tu as gagné le combat en ligne ! 🏆" else "Tu as perdu… 💀"
+        val message = if (classement != null) "$base\n\n$classement" else base
         AlertDialog.Builder(this)
-            .setTitle(if (vainqueur == monCamp) "Victoire !" else "Défaite…")
-            .setMessage(if (vainqueur == monCamp) "Tu as gagné le combat en ligne ! 🏆" else "Tu as perdu… 💀")
+            .setTitle(titre)
+            .setMessage(message)
             .setCancelable(false)
             .setPositiveButton("Retour") { _, _ -> finish() }
             .show()
     }
 
     // ---------- Effets ----------
-
-    private val emojis = mapOf(
-        "fire" to "🔥", "water" to "💧", "electric" to "⚡", "grass" to "🍃", "ice" to "❄️",
-        "fighting" to "👊", "poison" to "☠️", "ground" to "⛰️", "flying" to "🌪️", "psychic" to "🔮",
-        "bug" to "🐛", "rock" to "🪨", "ghost" to "👻", "dragon" to "🐉", "dark" to "🌙",
-        "steel" to "⚙️", "fairy" to "✨", "normal" to "⭐",
-    )
 
     private fun animerCoup(cibleEstAdv: Boolean, degats: Int, crit: Boolean) {
         val img = findViewById<ImageView>(if (cibleEstAdv) R.id.advSprite else R.id.joueurSprite)
