@@ -248,7 +248,17 @@ class CombatActivity : AppCompatActivity() {
     private fun boutonAttaque(atk: Attaque): View {
         val (a, b) = TypeColors.couleurs(atk.type)
         val face = Deco.bouton3d(this, a, b, TypeColors.assombrir(b, 0.55f))
-        val v = construireBouton(atk.nom, TypeColors.nomFr(atk.type).uppercase(), face, TypeColors.encre(atk.type), true) { jouerAttaque(atk) }
+        val mult = com.s7venz.pocodex.combat.TypeChart.multiplicateur(atk.type, advActif().types)
+        val suffixe = when (mult) {
+            1.0 -> ""
+            0.0 -> "   ×0"
+            0.25 -> "   ×0,25"
+            0.5 -> "   ×0,5"
+            2.0 -> "   ×2"
+            4.0 -> "   ×4"
+            else -> "   ×$mult"
+        }
+        val v = construireBouton(atk.nom + suffixe, TypeColors.nomFr(atk.type).uppercase(), face, TypeColors.encre(atk.type), true) { jouerAttaque(atk) }
         v.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             .also { it.marginStart = Deco.dp(this, 5f); it.marginEnd = Deco.dp(this, 5f) }
         return v
