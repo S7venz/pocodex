@@ -53,9 +53,46 @@ object Attaques {
         "fairy" to listOf(Attaque("Pouvoir Lunaire", "fairy", S, 95, 100), Attaque("Câlinerie", "fairy", S, 90, 90)),
     )
 
+    /**
+     * Pour chaque type, un type complémentaire tactiquement pertinent.
+     * Utilisé pour donner une attaque de couverture aux Pokémon monotypes.
+     */
+    private val couverture: Map<String, String> = mapOf(
+        "normal"   to "fighting",
+        "fire"     to "fighting",
+        "water"    to "ice",
+        "electric" to "flying",
+        "grass"    to "poison",
+        "ice"      to "ground",
+        "fighting" to "rock",
+        "poison"   to "ground",
+        "ground"   to "rock",
+        "flying"   to "fighting",
+        "psychic"  to "fighting",
+        "bug"      to "rock",
+        "rock"     to "ground",
+        "ghost"    to "dark",
+        "dragon"   to "ice",
+        "dark"     to "fighting",
+        "steel"    to "ground",
+        "fairy"    to "steel",
+    )
+
     fun pour(p: Pokemon): List<Attaque> {
         val choisies = mutableListOf<Attaque>()
         p.types.distinct().forEach { t -> parType[t]?.let { choisies.addAll(it) } }
+
+        // Couverture pour les monotypes : si un seul type et moins de 4 attaques
+        if (p.types.distinct().size == 1) {
+            val typePrincipal = p.types.first()
+            val typeCouverture = couverture[typePrincipal]
+            if (typeCouverture != null && choisies.size < 4) {
+                val attaqueCouverture = parType[typeCouverture]
+                    ?.firstOrNull { a -> choisies.none { it.nom == a.nom } }
+                if (attaqueCouverture != null) choisies.add(attaqueCouverture)
+            }
+        }
+
         parType["normal"]?.firstOrNull()?.let { choisies.add(it) }
         val finales = choisies.distinctBy { it.nom }.take(4)
         return finales.ifEmpty { listOf(secours) }
