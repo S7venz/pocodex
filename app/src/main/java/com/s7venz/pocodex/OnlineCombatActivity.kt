@@ -56,6 +56,8 @@ class OnlineCombatActivity : AppCompatActivity() {
     private var seqVu = -1                    // dernier seq d'état appliqué (invité)
     private var coupEnAttente = -1           // coup invité en attente d'accusé (pour renvoi)
     private var dernierEtat: String? = null  // dernier état publié (hôte) — pour re-diffusion
+    private var demarrageHote = false        // démarrage hôte en cours (anti double-join pendant la suspension)
+    private var finAffichee = false          // dialogue de fin déjà affiché (anti double-dialogue)
 
     private val estHote get() = role == ROLE_HOST
     private val monCamp get() = if (estHote) "host" else "guest"
@@ -165,7 +167,7 @@ class OnlineCombatActivity : AppCompatActivity() {
         val o = runCatching { JSONObject(payload) }.getOrNull() ?: return
         when (o.optString("k")) {
             "join" -> when {
-                estHote && adv == null -> demarrerHote(o.optInt("id"))
+                estHote && adv == null && !demarrageHote -> demarrerHote(o.optInt("id"))
                 estHote && adv != null -> dernierEtat?.let { envoyer(it) }   // invité qui re-rejoint → on lui renvoie l'état
             }
             "act" -> if (estHote && enJeu && tour == "guest" && !enCours &&
@@ -179,6 +181,7 @@ class OnlineCombatActivity : AppCompatActivity() {
     // ---------- Côté HÔTE (autoritaire) ----------
 
     private suspend fun demarrerHote(advId: Int) {
+        demarrageHote = true  // verrou avant toute suspension : empêche un 2ᵉ join de relancer le démarrage
         adv = MoteurCombat.depuisPokemon(PokedexRepository.parId(advId) ?: PokedexRepository.tous().first())
         bindAdv()
         enJeu = true
@@ -246,8 +249,9 @@ class OnlineCombatActivity : AppCompatActivity() {
         o.put("h", objCombattant(moi))  // l'hôte est "h"
         o.put("g", objCombattant(a))
         o.put("msg", msg)
-        dernierEtat = o.toString()
-        lifecycleScope.launch { Reseau.publier(topic, dernierEtat!!) }
+        val etat = o.toString()
+        dernierEtat = etat
+        lifecycleScope.launch { Reseau.publier(topic, etat) }
     }
 
     // ---------- Côté INVITÉ (affichage) ----------
@@ -392,6 +396,8 @@ class OnlineCombatActivity : AppCompatActivity() {
     }
 
     private fun finPartie(vainqueur: String) {
+        if (finAffichee) return  // écho d'un état fini=true (reconnexion) → on n'empile pas un 2ᵉ dialogue
+        finAffichee = true
         fini = true
         findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
         if (vainqueur == monCamp) { animerKo(findViewById(R.id.advSprite)) } else { animerKo(findViewById(R.id.joueurSprite)) }
