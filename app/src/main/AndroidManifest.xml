@@ -27,7 +27,8 @@
 
         <activity
             android:name=".CombatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".EquipeActivity"
@@ -39,7 +40,8 @@
 
         <activity
             android:name=".OnlineCombatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
