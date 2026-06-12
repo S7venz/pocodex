@@ -53,6 +53,12 @@
     <color name="recherche_bord">#E1E1EA</color>
     <color name="indicateur">#C4C4CE</color>
 
+    <!-- Blanc semi-transparent (numéro sur en-tête type-coloré) -->
+    <color name="blanc_demi">#D9FFFFFF</color>
+
+    <!-- Gris intermédiaire (bouton btn_white : texte sur fond clair) -->
+    <color name="gris_moyen">#3A3A46</color>
+
     <!-- Textes -->
     <color name="encre">#1C1C22</color>
     <color name="encre2">#23232C</color>

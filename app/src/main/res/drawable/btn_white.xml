@@ -10,7 +10,7 @@
         <shape android:shape="rectangle">
             <gradient
                 android:angle="270"
-                android:startColor="#FFFFFF"
+                android:startColor="@color/fond_blanc"
                 android:endColor="#E9E9F0" />
             <corners android:radius="13dp" />
             <stroke android:width="2dp" android:color="#10000000" />
