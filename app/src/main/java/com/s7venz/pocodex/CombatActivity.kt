@@ -30,6 +30,7 @@ import com.s7venz.pocodex.combat.Inventaire
 import com.s7venz.pocodex.combat.MoteurCombat
 import com.s7venz.pocodex.combat.Statut
 import com.s7venz.pocodex.data.AppDatabase
+import com.s7venz.pocodex.data.CaptureEntity
 import com.s7venz.pocodex.data.MembreEquipe
 import com.s7venz.pocodex.data.PokedexRepository
 import com.s7venz.pocodex.ui.Deco
@@ -52,6 +53,7 @@ class CombatActivity : AppCompatActivity() {
     private var toursDepuisSwitchIA = 0
 
     private val equipeDao by lazy { AppDatabase.get(this).equipeDao() }
+    private val captureDao by lazy { AppDatabase.get(this).captureDao() }
 
     private val vibreur: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -445,6 +447,7 @@ class CombatActivity : AppCompatActivity() {
                 vibrer(120)
                 val n = equipeDao.nombre()
                 if (n < 6) equipeDao.ajouter(MembreEquipe(advActif().id, equipeDao.ordreMax() + 1))
+                captureDao.ajouter(CaptureEntity(advActif().id, false))
                 advActif().pv = 0
                 animerKo(findViewById(R.id.advSprite))
                 delay(700)

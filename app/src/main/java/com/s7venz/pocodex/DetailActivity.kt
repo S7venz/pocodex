@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.s7venz.pocodex.combat.Natures
 import com.s7venz.pocodex.data.AppDatabase
+import com.s7venz.pocodex.data.CaptureEntity
 import com.s7venz.pocodex.data.FavoriEntity
 import com.s7venz.pocodex.data.MembreEquipe
 import com.s7venz.pocodex.data.PokedexRepository
@@ -144,6 +145,7 @@ class DetailActivity : AppCompatActivity() {
                     return@launch
                 }
                 dao.ajouter(MembreEquipe(pokeId, dao.ordreMax() + 1))
+                db.captureDao().ajouter(CaptureEntity(pokeId, false))
                 estDansEquipe = true
                 Toast.makeText(this@DetailActivity, "$nom rejoint l'équipe !", Toast.LENGTH_SHORT).show()
             }
