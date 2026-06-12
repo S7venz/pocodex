@@ -582,15 +582,23 @@ class CombatActivity : AppCompatActivity() {
     }
 
     private fun flashCible(img: ImageView) {
-        img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP)
-        img.postDelayed({ img.clearColorFilter() }, 90)
-        img.postDelayed({ img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP) }, 160)
-        img.postDelayed({ img.clearColorFilter() }, 250)
+        lifecycleScope.launch {
+            img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP)
+            delay(90)
+            img.clearColorFilter()
+            delay(70)
+            img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP)
+            delay(90)
+            img.clearColorFilter()
+        }
     }
 
     private fun flashStatut(img: ImageView, couleur: Int) {
-        img.setColorFilter(couleur, PorterDuff.Mode.SRC_ATOP)
-        img.postDelayed({ img.clearColorFilter() }, 380)
+        lifecycleScope.launch {
+            img.setColorFilter(couleur, PorterDuff.Mode.SRC_ATOP)
+            delay(380)
+            img.clearColorFilter()
+        }
     }
 
     private fun ecranFlash(couleur: Int) {
