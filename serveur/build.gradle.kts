@@ -37,10 +37,12 @@ dependencies {
     // Journalisation
     implementation("ch.qos.logback:logback-classic:1.5.6")
 
-    // Tests : hôte de test Ktor + client (CIO + WebSockets) + kotlin-test
+    // Client Ktor (CIO + WebSockets) : utilisé par l'outil de simulation d'invité.
+    implementation("io.ktor:ktor-client-cio:$versionKtor")
+    implementation("io.ktor:ktor-client-websockets:$versionKtor")
+
+    // Tests : hôte de test Ktor + client content-negotiation + kotlin-test
     testImplementation("io.ktor:ktor-server-test-host:$versionKtor")
-    testImplementation("io.ktor:ktor-client-cio:$versionKtor")
-    testImplementation("io.ktor:ktor-client-websockets:$versionKtor")
     testImplementation("io.ktor:ktor-client-content-negotiation:$versionKtor")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
