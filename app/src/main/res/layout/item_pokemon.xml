@@ -77,5 +77,23 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/foil_sheen" />
+
+        <!-- Badge « capturé » : Poké Ball dans un petit cercle, en haut à droite -->
+        <FrameLayout
+            android:id="@+id/badgeCapture"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_circle_btn"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_pokeball"
+                app:tint="#FFFFFF" />
+        </FrameLayout>
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

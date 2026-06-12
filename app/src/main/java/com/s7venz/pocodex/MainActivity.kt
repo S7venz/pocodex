@@ -25,10 +25,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var messageVide: TextView
     private lateinit var btnFavoris: ImageButton
+    private lateinit var txtCompletion: TextView
     private val dao by lazy { AppDatabase.get(this).favoriDao() }
+    private val captureDao by lazy { AppDatabase.get(this).captureDao() }
 
     private var tous: List<Pokemon> = emptyList()
     private var favIds: Set<Int> = emptySet()
+    private var captureIds: Set<Int> = emptySet()
     private var requete: String = ""
     private var montrerFavoris: Boolean = false
 
@@ -39,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         progress = findViewById(R.id.progress)
         messageVide = findViewById(R.id.messageVide)
         btnFavoris = findViewById(R.id.btnFavoris)
+        txtCompletion = findViewById(R.id.txtCompletion)
 
         adapter = PokemonAdapter { ouvrirDetail(it) }
         findViewById<RecyclerView>(R.id.recycler).apply {
@@ -71,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         if (tous.isNotEmpty()) {
             lifecycleScope.launch {
                 favIds = dao.getAll().map { it.id }.toSet()
+                captureIds = captureDao.ids().toSet()
                 afficher()
             }
         }
@@ -87,6 +92,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 tous = PokedexRepository.tous()
                 favIds = dao.getAll().map { it.id }.toSet()
+                captureIds = captureDao.ids().toSet()
                 afficher()
             } catch (e: Exception) {
                 android.util.Log.e("Pokedex", "Erreur chargement : ${e.javaClass.simpleName} ${e.message}", e)
@@ -100,10 +106,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun afficher() {
+        txtCompletion.text = "${captureIds.size}/151"
+
         val filtres = tous.filter { p ->
             p.nom.contains(requete, ignoreCase = true) &&
                 (!montrerFavoris || favIds.contains(p.id))
         }
+        adapter.majCaptures(captureIds)
         adapter.submit(filtres)
 
         val vide = filtres.isEmpty()

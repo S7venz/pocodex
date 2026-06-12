@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,19 +21,37 @@
         android:paddingEnd="14dp"
         android:paddingBottom="14dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/bungee"
-            android:letterSpacing="0.02"
-            android:shadowColor="@color/rouge_fonce"
-            android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="0.01"
-            android:text="POCODEX"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/bungee"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.02"
+                android:shadowColor="@color/rouge_fonce"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="0.01"
+                android:text="POCODEX"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp" />
+
+            <TextView
+                android:id="@+id/txtCompletion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:fontFamily="@font/press_start_2p"
+                android:includeFontPadding="false"
+                android:textColor="@color/or"
+                android:textSize="8sp"
+                tools:text="0/151" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnFavoris"

@@ -3,6 +3,7 @@ package com.s7venz.pocodex.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -17,6 +18,12 @@ class PokemonAdapter(
 ) : RecyclerView.Adapter<PokemonAdapter.VH>() {
 
     private val items = mutableListOf<Pokemon>()
+    /** Ids des Pokémon capturés (affiche le badge Poké Ball). À fixer avant submit(). */
+    private var captures: Set<Int> = emptySet()
+
+    fun majCaptures(ids: Set<Int>) {
+        captures = ids
+    }
 
     fun submit(liste: List<Pokemon>) {
         items.clear()
@@ -37,11 +44,13 @@ class PokemonAdapter(
         private val nom = v.findViewById<TextView>(R.id.txtNom)
         private val num = v.findViewById<TextView>(R.id.txtNumero)
         private val chips = v.findViewById<LinearLayout>(R.id.chipsContainer)
+        private val badge = v.findViewById<FrameLayout>(R.id.badgeCapture)
 
         fun bind(p: Pokemon) {
             val d = itemView.resources.displayMetrics.density
             num.text = p.numero
             nom.text = p.nom
+            badge.visibility = if (p.id in captures) View.VISIBLE else View.GONE
             fond.background = TypeColors.degrade(p.typePrincipal, 18 * d)
             img.load(p.artworkUrl) { crossfade(true) }
 
