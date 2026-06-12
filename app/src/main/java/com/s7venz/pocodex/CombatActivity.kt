@@ -527,7 +527,7 @@ class CombatActivity : AppCompatActivity() {
 
         if (def.enVie && r.statutInflige != null) {
             def.statut = r.statutInflige
-            if (r.statutInflige == Statut.SOMMEIL) def.toursSommeil = (1..3).random()
+            if (r.statutInflige == Statut.SOMMEIL) def.toursSommeil = (2..4).random()
             log("${def.nom} ${MoteurCombat.messageStatut(r.statutInflige)}")
             flashStatut(cibleImg, r.statutInflige.couleur)
             if (cibleEstAdversaire) remplirChips(findViewById(R.id.advChips), def)
