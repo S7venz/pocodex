@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/panneau" />
-    <corners android:radius="20dp" />
-    <stroke android:width="2dp" android:color="@color/bord" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ombre dure portée (bas 6 dp) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/nuit2" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- Face -->
+    <item android:bottom="6dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/panneau" />
+            <corners android:radius="20dp" />
+            <stroke android:width="2dp" android:color="@color/bord2" />
+        </shape>
+    </item>
+</layer-list>

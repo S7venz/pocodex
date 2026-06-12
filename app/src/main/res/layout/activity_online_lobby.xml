@@ -21,11 +21,11 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/bg_nav_btn"
             android:contentDescription="@string/combat_titre"
-            android:padding="8dp"
+            android:padding="12dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_back"
             app:tint="#FFFFFF" />
@@ -86,7 +86,7 @@
                     android:layout_marginTop="5dp"
                     android:fontFamily="@font/outfit"
                     android:text="Génère un code et partage-le à un ami."
-                    android:textColor="#FFE1DA"
+                    android:textColor="#FFFFFF"
                     android:textSize="13sp" />
 
                 <TextView
@@ -113,8 +113,8 @@
                     android:layout_marginTop="13dp"
                     android:fontFamily="@font/press_start_2p"
                     android:text="APPUIE POUR LANCER"
-                    android:textColor="#FFE1DA"
-                    android:textSize="8sp" />
+                    android:textColor="#FFFFFF"
+                    android:textSize="7sp" />
             </LinearLayout>
 
             <!-- ===== OU ===== -->
@@ -137,7 +137,7 @@
                     android:layout_marginHorizontal="12dp"
                     android:fontFamily="@font/press_start_2p"
                     android:text="OU"
-                    android:textColor="#7A7A86"
+                    android:textColor="@color/gris4"
                     android:textSize="9sp" />
 
                 <View
@@ -212,7 +212,7 @@
                 android:fontFamily="@font/outfit"
                 android:gravity="center"
                 android:text="Une fois connectés, le combat se joue dans l'arène — même interface, en temps réel."
-                android:textColor="#6A6A76"
+                android:textColor="@color/gris4"
                 android:textSize="12sp" />
         </LinearLayout>
     </ScrollView>
