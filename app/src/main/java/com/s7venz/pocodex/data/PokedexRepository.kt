@@ -7,6 +7,8 @@ import com.s7venz.pocodex.model.Pokemon
 import com.s7venz.pocodex.model.PokemonDto
 import com.s7venz.pocodex.model.toPokemon
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -17,19 +19,22 @@ import kotlinx.coroutines.withContext
 object PokedexRepository {
 
     private var cache: List<Pokemon> = emptyList()
+    private val mutex = Mutex()
 
     suspend fun tous(): List<Pokemon> {
-        if (cache.isEmpty()) {
-            cache = withContext(Dispatchers.IO) {
-                val json = PokeApp.instance.assets
-                    .open("pokedex.json")
-                    .bufferedReader()
-                    .use { it.readText() }
-                val type = object : TypeToken<List<PokemonDto>>() {}.type
-                Gson().fromJson<List<PokemonDto>>(json, type)
-                    .filter { it.id in 1..151 && it.base != null }
-                    .map { it.toPokemon() }
-                    .sortedBy { it.id }
+        mutex.withLock {
+            if (cache.isEmpty()) {
+                cache = withContext(Dispatchers.IO) {
+                    val json = PokeApp.instance.assets
+                        .open("pokedex.json")
+                        .bufferedReader()
+                        .use { it.readText() }
+                    val type = object : TypeToken<List<PokemonDto>>() {}.type
+                    Gson().fromJson<List<PokemonDto>>(json, type)
+                        .filter { it.id in 1..151 && it.base != null }
+                        .map { it.toPokemon() }
+                        .sortedBy { it.id }
+                }
             }
         }
         return cache
