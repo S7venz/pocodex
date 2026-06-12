@@ -85,6 +85,13 @@ object MoteurCombat {
         return Resultat(d, mult, critique, false, inflige)
     }
 
+    /**
+     * Avantage offensif de [c] contre [cible] :
+     * meilleur multiplicateur parmi les types de [c] sur les types de [cible].
+     */
+    fun avantage(c: Combattant, cible: Combattant): Double =
+        c.types.maxOfOrNull { t -> TypeChart.multiplicateur(t, cible.types) } ?: 1.0
+
     fun choisirIA(att: Combattant, cible: Combattant): Attaque =
         att.attaques.maxByOrNull { a ->
             val stab = if (a.type in att.types) 1.5 else 1.0

@@ -49,6 +49,7 @@ class CombatActivity : AppCompatActivity() {
     private var advActifIndex = 0
     private var etat = Etat.MENU
     private var enCours = false
+    private var toursDepuisSwitchIA = 0
 
     private val equipeDao by lazy { AppDatabase.get(this).equipeDao() }
 
@@ -82,6 +83,7 @@ class CombatActivity : AppCompatActivity() {
 
     private fun demarrer() {
         Inventaire.reinitialiser()
+        toursDepuisSwitchIA = 0
         findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
         findViewById<TextView>(R.id.logText).text = ""
         findViewById<ProgressBar>(R.id.combatProgress).isVisible = true
@@ -340,6 +342,28 @@ class CombatActivity : AppCompatActivity() {
 
     // ---------- Tour de jeu ----------
 
+    /**
+     * Décide si l'IA doit switcher. Renvoie true si elle switche (consomme son tour).
+     * Condition : ≥3 tours sans switch, désavantage de type actuel < 2.0,
+     * et il existe un remplaçant vivant avec avantage ≥ 2.0.
+     */
+    private suspend fun tenterSwitchIA(): Boolean {
+        toursDepuisSwitchIA++
+        if (toursDepuisSwitchIA < 3) return false
+        if (MoteurCombat.avantage(advActif(), actif()) >= 2.0) return false
+        val remplacant = advEquipe.indexOfFirst { r ->
+            r.enVie && r != advActif() && MoteurCombat.avantage(r, actif()) >= 2.0
+        }
+        if (remplacant < 0) return false
+        log("Le Dresseur rappelle ${advActif().nom} !")
+        delay(400)
+        log("Le Dresseur envoie ${advEquipe[remplacant].nom} !")
+        advActifIndex = remplacant
+        bindAdversaire()
+        toursDepuisSwitchIA = 0
+        return true
+    }
+
     private fun jouerAttaque(move: Attaque) {
         // Décrémenter les PP du joueur (Lutte n'a pas de PP à décrémenter)
         actif().pp[move.nom]?.let { if (it > 0) actif().pp[move.nom] = it - 1 }
@@ -347,12 +371,16 @@ class CombatActivity : AppCompatActivity() {
         etat = Etat.MENU
         afficherMenu()
         lifecycleScope.launch {
-            val moveAdv = MoteurCombat.choisirIA(advActif(), actif())
+            // L'IA décide si elle switche (consomme son tour si oui)
+            val iaASwitche = tenterSwitchIA()
+            val moveAdv = if (iaASwitche) null else MoteurCombat.choisirIA(advActif(), actif())
             val sequence = if (actif().vitesse >= advActif().vitesse) listOf(true, false) else listOf(false, true)
             for (cestJoueur in sequence) {
+                // Si l'IA a switché, elle n'attaque pas ce tour
+                if (!cestJoueur && iaASwitche) continue
                 val att = if (cestJoueur) actif() else advActif()
                 val def = if (cestJoueur) advActif() else actif()
-                val mv = if (cestJoueur) move else moveAdv
+                val mv = if (cestJoueur) move else moveAdv!!
                 val (peut, msg) = MoteurCombat.peutAgir(att)
                 if (msg != null) log(msg)
                 if (!peut) { delay(650); continue }
@@ -436,12 +464,16 @@ class CombatActivity : AppCompatActivity() {
     }
 
     private suspend fun riposteEtFin() {
-        val (peut, msg) = MoteurCombat.peutAgir(advActif())
-        if (msg != null) log(msg)
-        if (peut) {
-            delay(400)
-            val ia = MoteurCombat.choisirIA(advActif(), actif())
-            if (executerAttaque(advActif(), actif(), ia, cibleEstAdversaire = false)) return
+        // L'IA décide si elle switche (consomme son tour si oui)
+        val iaASwitche = tenterSwitchIA()
+        if (!iaASwitche) {
+            val (peut, msg) = MoteurCombat.peutAgir(advActif())
+            if (msg != null) log(msg)
+            if (peut) {
+                delay(400)
+                val ia = MoteurCombat.choisirIA(advActif(), actif())
+                if (executerAttaque(advActif(), actif(), ia, cibleEstAdversaire = false)) return
+            }
         }
         if (appliquerStatutsFinTour()) return
         finTour()
