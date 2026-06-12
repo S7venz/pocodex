@@ -24,6 +24,8 @@ class EquipeActivity : AppCompatActivity() {
 
     private val dao by lazy { AppDatabase.get(this).equipeDao() }
     private var equipe: List<Pokemon> = emptyList()
+    /** id → chromatique, pour afficher « ✨ » sur les membres shiny. */
+    private var shinyParId: Map<Int, Boolean> = emptyMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,8 +46,9 @@ class EquipeActivity : AppCompatActivity() {
 
     private fun charger() {
         lifecycleScope.launch {
-            val ids = dao.tous().map { it.id }
-            equipe = ids.mapNotNull { PokedexRepository.parId(it) }
+            val membres = dao.tous()
+            shinyParId = membres.associate { it.id to it.shiny }
+            equipe = membres.mapNotNull { PokedexRepository.parId(it.id) }
             afficher()
         }
     }
@@ -102,7 +105,7 @@ class EquipeActivity : AppCompatActivity() {
             gravity = Gravity.BOTTOM
         }
         ligneNom.addView(TextView(this).apply {
-            text = p.nom
+            text = p.nom + if (shinyParId[p.id] == true) " ✨" else ""
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 17f
             typeface = ResourcesCompat.getFont(this@EquipeActivity, R.font.baloo2_black)

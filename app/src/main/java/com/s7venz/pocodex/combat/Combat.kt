@@ -25,6 +25,7 @@ data class Combattant(
     private val baseDefSpe: Int,
     private val baseVit: Int,
     val attaques: List<Attaque>,
+    val estShiny: Boolean = false,
 ) {
     var statut: Statut? = null
     var toursSommeil: Int = 0
@@ -52,7 +53,7 @@ data class Resultat(
 
 object MoteurCombat {
 
-    fun depuisPokemon(p: Pokemon): Combattant {
+    fun depuisPokemon(p: Pokemon, shiny: Boolean = false): Combattant {
         val pvMax = p.pv * 2 + 20
         val attaques = Attaques.pour(p)
         return Combattant(
@@ -61,6 +62,7 @@ object MoteurCombat {
             baseAtk = p.attaque, baseDef = p.defense,
             baseAtkSpe = p.attaqueSpe, baseDefSpe = p.defenseSpe, baseVit = p.vitesse,
             attaques = attaques,
+            estShiny = shiny,
         ).also { c ->
             attaques.forEach { a -> c.pp[a.nom] = a.ppMax }
         }

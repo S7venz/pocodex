@@ -97,11 +97,18 @@ class CombatActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val ids = equipeDao.tous().map { it.id }.toMutableList()
+                val membres = equipeDao.tous()
+                // id → chromatique (persisté en base) pour les membres du joueur
+                val shinyParId = membres.associate { it.id to it.shiny }
+                val ids = membres.map { it.id }.toMutableList()
                 ids.remove(joueurId)
                 ids.add(0, joueurId)
                 equipe = ids.distinct().take(6)
-                    .mapNotNull { id -> PokedexRepository.parId(id)?.let { MoteurCombat.depuisPokemon(it) } }
+                    .mapNotNull { id ->
+                        PokedexRepository.parId(id)?.let {
+                            MoteurCombat.depuisPokemon(it, shinyParId[id] ?: false)
+                        }
+                    }
                     .toMutableList()
                 if (equipe.isEmpty()) {
                     equipe = mutableListOf(MoteurCombat.depuisPokemon(PokedexRepository.tous().first()))
@@ -120,7 +127,7 @@ class CombatActivity : AppCompatActivity() {
                     ?: candidats(0.65, 1.35).takeIf { it.size >= 3 }
                     ?: tousPokemon.filter { it.id !in ids }
                 advEquipe = pool.shuffled().take(3)
-                    .map { MoteurCombat.depuisPokemon(it) }
+                    .map { MoteurCombat.depuisPokemon(it, shiny = (1..64).random() == 1) }
                     .toMutableList()
                 advActifIndex = 0
 
@@ -144,23 +151,31 @@ class CombatActivity : AppCompatActivity() {
     // ---------- Plaques ----------
 
     private fun bindAdversaire() {
-        findViewById<TextView>(R.id.advNom).text = advActif().nom
+        val c = advActif()
+        findViewById<TextView>(R.id.advNom).text = c.nom + if (c.estShiny) " ✨" else ""
         val img = findViewById<ImageView>(R.id.advSprite)
         img.alpha = 1f; img.translationY = 0f; img.clearColorFilter()
-        img.load(advActif().spriteUrl) { crossfade(true) }
-        remplirChips(findViewById(R.id.advChips), advActif())
-        setHp(findViewById(R.id.advHpBar), findViewById(R.id.advHpTxt), advActif())
+        img.load(c.spriteUrl) { crossfade(true) }
+        if (c.estShiny) teinteShiny(img)
+        remplirChips(findViewById(R.id.advChips), c)
+        setHp(findViewById(R.id.advHpBar), findViewById(R.id.advHpTxt), c)
         entree(img, depuisDroite = true)
+        if (c.estShiny) {
+            texteFlottant(img, "✨ Chromatique !", 0xFFFFD34D.toInt(), 20f)
+            log("Un ${c.nom} chromatique apparaît !")
+        }
     }
 
     private fun bindJoueur() {
-        findViewById<TextView>(R.id.joueurNom).text = actif().nom
+        val c = actif()
+        findViewById<TextView>(R.id.joueurNom).text = c.nom + if (c.estShiny) " ✨" else ""
         val img = findViewById<ImageView>(R.id.joueurSprite)
         img.alpha = 1f; img.translationY = 0f; img.clearColorFilter()
-        img.load(actif().spriteUrl) { crossfade(true) }
+        img.load(c.spriteUrl) { crossfade(true) }
         img.scaleX = -1f
-        remplirChips(findViewById(R.id.joueurChips), actif())
-        setHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), actif())
+        if (c.estShiny) teinteShiny(img)
+        remplirChips(findViewById(R.id.joueurChips), c)
+        setHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), c)
         entree(img, depuisDroite = false)
     }
 
@@ -446,8 +461,9 @@ class CombatActivity : AppCompatActivity() {
                 log("Gagné ! ${advActif().nom} est capturé ! 🎉")
                 vibrer(120)
                 val n = equipeDao.nombre()
-                if (n < 6) equipeDao.ajouter(MembreEquipe(advActif().id, equipeDao.ordreMax() + 1))
-                captureDao.ajouter(CaptureEntity(advActif().id, false))
+                val shiny = advActif().estShiny
+                if (n < 6) equipeDao.ajouter(MembreEquipe(advActif().id, equipeDao.ordreMax() + 1, shiny))
+                captureDao.ajouter(CaptureEntity(advActif().id, shiny))
                 advActif().pv = 0
                 animerKo(findViewById(R.id.advSprite))
                 delay(700)
@@ -517,7 +533,7 @@ class CombatActivity : AppCompatActivity() {
         log("${att.nom} utilise ${atk.nom} !" + (if (r.critique) " Coup critique !" else "") + "  (-${r.degats} PV)")
         MoteurCombat.messageEfficacite(r.mult).takeIf { it.isNotEmpty() }?.let { log(it) }
 
-        flashCible(cibleImg)
+        flashCible(cibleImg, def)
         secouer(cibleImg)
         texteFlottant(cibleImg, if (r.critique) "-${r.degats} !" else "-${r.degats}",
             if (r.critique) 0xFFFFD54F.toInt() else 0xFFFFFFFF.toInt(), if (r.critique) 32f else 24f)
@@ -532,7 +548,7 @@ class CombatActivity : AppCompatActivity() {
             def.statut = r.statutInflige
             if (r.statutInflige == Statut.SOMMEIL) def.toursSommeil = (2..4).random()
             log("${def.nom} ${MoteurCombat.messageStatut(r.statutInflige)}")
-            flashStatut(cibleImg, r.statutInflige.couleur)
+            flashStatut(cibleImg, r.statutInflige.couleur, def)
             if (cibleEstAdversaire) remplirChips(findViewById(R.id.advChips), def)
             else remplirChips(findViewById(R.id.joueurChips), def)
         }
@@ -555,7 +571,7 @@ class CombatActivity : AppCompatActivity() {
                 c.pv = (c.pv - dmg).coerceAtLeast(0)
                 log(msg!!)
                 val img = findViewById<ImageView>(if (cestJoueur) R.id.joueurSprite else R.id.advSprite)
-                flashStatut(img, c.statut?.couleur ?: 0xFFFFFFFF.toInt())
+                flashStatut(img, c.statut?.couleur ?: 0xFFFFFFFF.toInt(), c)
                 if (cestJoueur) animerHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), c)
                 else animerHp(findViewById(R.id.advHpBar), findViewById(R.id.advHpTxt), c)
                 delay(600)
@@ -701,7 +717,17 @@ class CombatActivity : AppCompatActivity() {
             .start()
     }
 
-    private fun flashCible(img: ImageView) {
+    /** Voile doré léger appliqué aux sprites chromatiques. */
+    private fun teinteShiny(img: ImageView) {
+        img.setColorFilter(0x59FFD34D.toInt(), PorterDuff.Mode.SRC_ATOP)
+    }
+
+    /** Restaure la teinte chromatique si [c] est shiny (à appeler après tout clearColorFilter). */
+    private fun restaurerTeinte(img: ImageView, c: Combattant) {
+        if (c.estShiny) teinteShiny(img) else img.clearColorFilter()
+    }
+
+    private fun flashCible(img: ImageView, c: Combattant) {
         lifecycleScope.launch {
             img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP)
             delay(90)
@@ -709,15 +735,16 @@ class CombatActivity : AppCompatActivity() {
             delay(70)
             img.setColorFilter(0xFFFFFFFF.toInt(), PorterDuff.Mode.SRC_ATOP)
             delay(90)
-            img.clearColorFilter()
+            // Restaure le voile doré pour qu'il survive au flash de dégâts.
+            restaurerTeinte(img, c)
         }
     }
 
-    private fun flashStatut(img: ImageView, couleur: Int) {
+    private fun flashStatut(img: ImageView, couleur: Int, c: Combattant) {
         lifecycleScope.launch {
             img.setColorFilter(couleur, PorterDuff.Mode.SRC_ATOP)
             delay(380)
-            img.clearColorFilter()
+            restaurerTeinte(img, c)
         }
     }
 
