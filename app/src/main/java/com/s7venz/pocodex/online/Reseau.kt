@@ -32,6 +32,7 @@ object Reseau {
     }
 
     @Volatile private var flux: Call? = null
+    private var ferme = false  // état "fermé" : empêche toute écoute orpheline après couper()
 
     data class Msg(val id: String, val time: Long, val payload: String)
 
@@ -51,7 +52,9 @@ object Reseau {
             val since = if (depuis <= 0L) "all" else depuis.toString()
             val req = Request.Builder().url("$BASE$topic/json?since=$since").build()
             val call = clientFlux.newCall(req)
-            flux = call
+            // Enregistrement atomique : si couper() est déjà passé, on annule sans écouter
+            // (sinon une connexion créée pendant couper() resterait orpheline → fuite TCP).
+            if (!enregistrerFlux(call)) { call.cancel(); return@withContext }
             call.execute().use { resp ->
                 val source = resp.body?.source() ?: return@use
                 while (!source.exhausted()) {
@@ -67,8 +70,27 @@ object Reseau {
             }
         }
 
+    /** Rouvre la couche réseau (à appeler à l'entrée de l'écran, avant de lancer l'écoute). */
+    @Synchronized
+    fun ouvrir() {
+        ferme = false
+    }
+
+    /**
+     * Enregistre le call de streaming de façon atomique vis-à-vis de [couper].
+     * Renvoie false si la couche est déjà fermée (l'appelant doit annuler son call).
+     */
+    @Synchronized
+    private fun enregistrerFlux(call: Call): Boolean {
+        if (ferme) return false
+        flux = call
+        return true
+    }
+
     /** Coupe la connexion de streaming en cours (à appeler en quittant l'écran). */
+    @Synchronized
     fun couper() {
+        ferme = true
         runCatching { flux?.cancel() }
         flux = null
     }

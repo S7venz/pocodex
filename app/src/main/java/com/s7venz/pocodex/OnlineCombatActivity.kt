@@ -59,6 +59,7 @@ class OnlineCombatActivity : AppCompatActivity() {
     private var demarrageHote = false        // démarrage hôte en cours (anti double-join pendant la suspension)
     private var finAffichee = false          // dialogue de fin déjà affiché (anti double-dialogue)
     private var echecsEnvoi = 0              // échecs d'envoi consécutifs (alerte "connexion instable")
+    private var delaiRetrans = 3000L         // délai courant entre retransmissions (backoff jusqu'à 12 s)
 
     private val estHote get() = role == ROLE_HOST
     private val monCamp get() = if (estHote) "host" else "guest"
@@ -75,6 +76,7 @@ class OnlineCombatActivity : AppCompatActivity() {
         code = intent.getStringExtra(EXTRA_CODE) ?: "????"
         monId = intent.getIntExtra(EXTRA_MONID, 25)
         topic = "pkmncombatv2_$code"
+        Reseau.ouvrir()  // rouvre proprement la couche réseau (au cas où une partie précédente l'a fermée)
         // Session fraîche : on ignore l'historique du topic (parties précédentes sur le code).
         lastTime = System.currentTimeMillis() / 1000 - 5
         android.util.Log.i("PokeOnline", "topic=$topic role=$role monId=$monId")
@@ -129,12 +131,13 @@ class OnlineCombatActivity : AppCompatActivity() {
         }
     }
 
-    /** Retransmissions périodiques : anti-perte de message (join / coup / état). */
+    /** Retransmissions périodiques : anti-perte de message (join / coup / état), avec backoff progressif. */
     private fun tickRetransmission() {
         lifecycleScope.launch {
             while (isActive && !isFinishing && !fini) {
-                delay(4000)
+                delay(delaiRetrans)
                 renvoyerSiNecessaire()
+                delaiRetrans = (delaiRetrans * 3 / 2).coerceAtMost(12_000L)
             }
         }
     }
@@ -175,6 +178,7 @@ class OnlineCombatActivity : AppCompatActivity() {
 
     private suspend fun traiter(payload: String) {
         val o = runCatching { JSONObject(payload) }.getOrNull() ?: return
+        delaiRetrans = 3000L  // message pertinent reçu → on remet le backoff de retransmission à zéro
         when (o.optString("k")) {
             "join" -> when {
                 estHote && adv == null && !demarrageHote -> demarrerHote(o.optInt("id"))
