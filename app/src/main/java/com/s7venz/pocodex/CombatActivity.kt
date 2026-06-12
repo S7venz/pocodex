@@ -64,6 +64,10 @@ class CombatActivity : AppCompatActivity() {
     private fun actif(): Combattant = equipe[actifIndex]
     private fun advActif(): Combattant = advEquipe[advActifIndex]
 
+    /** BST (Base Stat Total) d'un Pokémon : somme des 6 stats de base. */
+    private fun bst(p: com.s7venz.pocodex.model.Pokemon): Int =
+        p.pv + p.attaque + p.defense + p.attaqueSpe + p.defenseSpe + p.vitesse
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_combat)
@@ -102,9 +106,19 @@ class CombatActivity : AppCompatActivity() {
                 }
                 actifIndex = 0
 
-                val advIds = (1..151).toList().shuffled().filter { it !in ids }.take(3)
-                advEquipe = advIds
-                    .mapNotNull { id -> PokedexRepository.parId(id)?.let { MoteurCombat.depuisPokemon(it) } }
+                // Calibrage des adversaires sur le BST moyen de l'équipe joueur
+                val pokemonsJoueur = ids.distinct().take(6)
+                    .mapNotNull { id -> PokedexRepository.parId(id) }
+                val bstMoyen = if (pokemonsJoueur.isEmpty()) 300.0
+                else pokemonsJoueur.map { bst(it) }.average()
+                val tousPokemon = PokedexRepository.tous()
+                fun candidats(facteurMin: Double, facteurMax: Double) =
+                    tousPokemon.filter { it.id !in ids && bst(it).toDouble() in (bstMoyen * facteurMin)..(bstMoyen * facteurMax) }
+                val pool = candidats(0.8, 1.2).takeIf { it.size >= 3 }
+                    ?: candidats(0.65, 1.35).takeIf { it.size >= 3 }
+                    ?: tousPokemon.filter { it.id !in ids }
+                advEquipe = pool.shuffled().take(3)
+                    .map { MoteurCombat.depuisPokemon(it) }
                     .toMutableList()
                 advActifIndex = 0
 
