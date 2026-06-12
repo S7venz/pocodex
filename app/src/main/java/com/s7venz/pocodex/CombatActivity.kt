@@ -24,6 +24,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import coil.load
 import com.s7venz.pocodex.combat.Attaque
+import com.s7venz.pocodex.combat.Attaques
 import com.s7venz.pocodex.combat.Combattant
 import com.s7venz.pocodex.combat.Inventaire
 import com.s7venz.pocodex.combat.MoteurCombat
@@ -185,14 +186,24 @@ class CombatActivity : AppCompatActivity() {
                 c.addView(r2)
             }
             Etat.ATTAQUE -> {
-                val atks = actif().attaques
-                var i = 0
-                while (i < atks.size) {
+                val combattant = actif()
+                val toutesVides = combattant.attaques.all { (combattant.pp[it.nom] ?: 0) <= 0 }
+                if (toutesVides) {
+                    // Tous les PP sont épuisés : seule Lutte est disponible
                     val r = rangee()
-                    r.addView(boutonAttaque(atks[i]))
-                    if (i + 1 < atks.size) r.addView(boutonAttaque(atks[i + 1])) else r.addView(remplisseur())
+                    r.addView(boutonAttaque(Attaques.LUTTE, combattant))
+                    r.addView(remplisseur())
                     c.addView(r)
-                    i += 2
+                } else {
+                    val atks = combattant.attaques
+                    var i = 0
+                    while (i < atks.size) {
+                        val r = rangee()
+                        r.addView(boutonAttaque(atks[i], combattant))
+                        if (i + 1 < atks.size) r.addView(boutonAttaque(atks[i + 1], combattant)) else r.addView(remplisseur())
+                        c.addView(r)
+                        i += 2
+                    }
                 }
                 c.addView(boutonPleine("‹  RETOUR", faceGris(), 0xFFFFFFFF.toInt(), true) { etat = Etat.MENU; afficherMenu() })
             }
@@ -246,9 +257,8 @@ class CombatActivity : AppCompatActivity() {
         return v
     }
 
-    private fun boutonAttaque(atk: Attaque): View {
+    private fun boutonAttaque(atk: Attaque, combattant: Combattant = actif()): View {
         val (a, b) = TypeColors.couleurs(atk.type)
-        val face = Deco.bouton3d(this, a, b, TypeColors.assombrir(b, 0.55f))
         val mult = com.s7venz.pocodex.combat.TypeChart.multiplicateur(atk.type, advActif().types)
         val suffixe = when (mult) {
             1.0 -> ""
@@ -259,7 +269,14 @@ class CombatActivity : AppCompatActivity() {
             4.0 -> "   ×4"
             else -> "   ×$mult"
         }
-        val v = construireBouton(atk.nom + suffixe, TypeColors.nomFr(atk.type).uppercase(), face, TypeColors.encre(atk.type), true) { jouerAttaque(atk) }
+        // PP restants (LUTTE n'a pas de PP — on n'affiche rien pour elle)
+        val ppActuel = combattant.pp[atk.nom]
+        val ppLabel = if (ppActuel != null) " · PP $ppActuel/${atk.ppMax}" else ""
+        val sousLabel = TypeColors.nomFr(atk.type).uppercase() + ppLabel
+        val aDespp = ppActuel == null || ppActuel > 0
+        val face = if (aDespp) Deco.bouton3d(this, a, b, TypeColors.assombrir(b, 0.55f)) else faceGris()
+        val ink = if (aDespp) TypeColors.encre(atk.type) else 0xFFAAAAAA.toInt()
+        val v = construireBouton(atk.nom + suffixe, sousLabel, face, ink, aDespp) { jouerAttaque(atk) }
         v.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             .also { it.marginStart = Deco.dp(this, 5f); it.marginEnd = Deco.dp(this, 5f) }
         return v
@@ -324,6 +341,8 @@ class CombatActivity : AppCompatActivity() {
     // ---------- Tour de jeu ----------
 
     private fun jouerAttaque(move: Attaque) {
+        // Décrémenter les PP du joueur (Lutte n'a pas de PP à décrémenter)
+        actif().pp[move.nom]?.let { if (it > 0) actif().pp[move.nom] = it - 1 }
         enCours = true
         etat = Etat.MENU
         afficherMenu()

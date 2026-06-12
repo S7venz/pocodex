@@ -28,6 +28,8 @@ data class Combattant(
 ) {
     var statut: Statut? = null
     var toursSommeil: Int = 0
+    /** PP actuels par nom d'attaque. Initialisés par MoteurCombat.depuisPokemon. */
+    val pp: MutableMap<String, Int> = mutableMapOf()
 
     val attaque get() = (baseAtk * Natures.modif(nature, Stat.ATTAQUE) * if (statut == Statut.BRULURE) 0.5 else 1.0).toInt()
     val defense get() = (baseDef * Natures.modif(nature, Stat.DEFENSE)).toInt()
@@ -52,13 +54,16 @@ object MoteurCombat {
 
     fun depuisPokemon(p: Pokemon): Combattant {
         val pvMax = p.pv * 2 + 20
+        val attaques = Attaques.pour(p)
         return Combattant(
             id = p.id, nom = p.nom, types = p.types, nature = Natures.pour(p.id),
             pvMax = pvMax, pv = pvMax,
             baseAtk = p.attaque, baseDef = p.defense,
             baseAtkSpe = p.attaqueSpe, baseDefSpe = p.defenseSpe, baseVit = p.vitesse,
-            attaques = Attaques.pour(p),
-        )
+            attaques = attaques,
+        ).also { c ->
+            attaques.forEach { a -> c.pp[a.nom] = a.ppMax }
+        }
     }
 
     fun degats(att: Combattant, def: Combattant, atk: Attaque): Resultat {

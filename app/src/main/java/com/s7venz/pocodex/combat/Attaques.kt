@@ -13,7 +13,14 @@ data class Attaque(
     val precision: Int,
     val statut: Statut? = null,
     val chanceStatut: Int = 0,
-)
+) {
+    /** PP maximum de cette attaque (calculés depuis la puissance, immuables). */
+    val ppMax: Int get() = when {
+        puissance >= 100 -> 5
+        puissance >= 80  -> 10
+        else             -> 15
+    }
+}
 
 object Attaques {
 
@@ -21,6 +28,9 @@ object Attaques {
     private val S = Categorie.SPECIAL
 
     private val secours = Attaque("Charge", "normal", P, 40, 100)
+
+    /** Attaque de dernier recours quand tous les PP sont épuisés. */
+    val LUTTE = Attaque("Lutte", "normal", P, 50, 100)
 
     private val parType: Map<String, List<Attaque>> = mapOf(
         "normal" to listOf(Attaque("Plaquage", "normal", P, 85, 100), Attaque("Hyper Voix", "normal", S, 90, 100)),
