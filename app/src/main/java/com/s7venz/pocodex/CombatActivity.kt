@@ -477,6 +477,8 @@ class CombatActivity : AppCompatActivity() {
     }
 
     private suspend fun appliquerStatutsFinTour(): Boolean {
+        // 1) Dégâts de statut appliqués AUX DEUX camps (joueur puis adversaire), sans
+        //    interrompre la boucle sur un K.O. : on ne résout les K.O. qu'ensuite.
         for (cestJoueur in listOf(true, false)) {
             val c = if (cestJoueur) actif() else advActif()
             if (!c.enVie) continue
@@ -489,10 +491,49 @@ class CombatActivity : AppCompatActivity() {
                 if (cestJoueur) animerHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), c)
                 else animerHp(findViewById(R.id.advHpBar), findViewById(R.id.advHpTxt), c)
                 delay(600)
-                if (!c.enVie) { gererKo(!cestJoueur); return true }
             }
         }
-        return false
+
+        val advKo = !advActif().enVie
+        val joueurKo = !actif().enVie
+        if (!advKo && !joueurKo) return false
+
+        // 2) Résolution des K.O. : l'adversaire d'abord (la victoire prime sur la défaite).
+        if (advKo) {
+            log("${advActif().nom} est K.O. !")
+            animerKo(findViewById(R.id.advSprite))
+            vibrer(120)
+            delay(750)
+            val suivant = advEquipe.indexOfFirst { it.enVie }
+            if (suivant < 0) {
+                // Plus aucun adversaire vivant : victoire immédiate, même si le joueur est K.O. aussi.
+                finPartie("Victoire !", "Tu as vaincu le Dresseur ! 🏆")
+                return true
+            }
+            advActifIndex = suivant
+            bindAdversaire()
+            log("Le Dresseur envoie ${advActif().nom} !")
+        }
+
+        if (joueurKo) {
+            log("${actif().nom} est K.O. !")
+            animerKo(findViewById(R.id.joueurSprite))
+            vibrer(120)
+            delay(750)
+            if (equipe.any { it.enVie }) {
+                etat = Etat.FORCE
+                afficherMenu()
+                log("Choisis ton prochain Pokémon !")
+                enCours = false
+            } else {
+                finPartie("Défaite…", "Toute ton équipe est K.O. 💀")
+            }
+            return true
+        }
+
+        // Seul l'adversaire était K.O. (joueur vivant) : on enchaîne sur le tour suivant.
+        finTour()
+        return true
     }
 
     private suspend fun gererKo(cibleEstAdversaire: Boolean) {
