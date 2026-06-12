@@ -52,6 +52,16 @@ class CombatActivity : AppCompatActivity() {
     private var enCours = false
     private var toursDepuisSwitchIA = 0
 
+    // ---------- Mode Ligue ----------
+    private var modeLigue = false
+    private var ligueTaille = 3
+    private var ligueBstMin = 0
+    private var ligueBstMax = Int.MAX_VALUE
+    private var ligueNom = "Le Dresseur"
+
+    /** Nom du dresseur adverse pour les logs (générique en mode normal, nommé en Ligue). */
+    private fun nomDresseur(): String = if (modeLigue) ligueNom else "Le Dresseur"
+
     private val equipeDao by lazy { AppDatabase.get(this).equipeDao() }
     private val captureDao by lazy { AppDatabase.get(this).captureDao() }
 
@@ -79,6 +89,11 @@ class CombatActivity : AppCompatActivity() {
         window.statusBarColor = 0xFFD61F0C.toInt()
 
         joueurId = intent.getIntExtra(EXTRA_ID, 1)
+        modeLigue = intent.getBooleanExtra(EXTRA_LIGUE, false)
+        ligueTaille = intent.getIntExtra(EXTRA_LIGUE_TAILLE, 3)
+        ligueBstMin = intent.getIntExtra(EXTRA_LIGUE_BST_MIN, 0)
+        ligueBstMax = intent.getIntExtra(EXTRA_LIGUE_BST_MAX, Int.MAX_VALUE)
+        ligueNom = intent.getStringExtra(EXTRA_LIGUE_NOM) ?: "Le Dresseur"
         demarrer()
     }
 
@@ -115,18 +130,39 @@ class CombatActivity : AppCompatActivity() {
                 }
                 actifIndex = 0
 
-                // Calibrage des adversaires sur le BST moyen de l'équipe joueur
-                val pokemonsJoueur = ids.distinct().take(6)
-                    .mapNotNull { id -> PokedexRepository.parId(id) }
-                val bstMoyen = if (pokemonsJoueur.isEmpty()) 300.0
-                else pokemonsJoueur.map { bst(it) }.average()
                 val tousPokemon = PokedexRepository.tous()
-                fun candidats(facteurMin: Double, facteurMax: Double) =
-                    tousPokemon.filter { it.id !in ids && bst(it).toDouble() in (bstMoyen * facteurMin)..(bstMoyen * facteurMax) }
-                val pool = candidats(0.8, 1.2).takeIf { it.size >= 3 }
-                    ?: candidats(0.65, 1.35).takeIf { it.size >= 3 }
-                    ?: tousPokemon.filter { it.id !in ids }
-                advEquipe = pool.shuffled().take(3)
+                val pool: List<com.s7venz.pocodex.model.Pokemon>
+                val tailleAdv: Int
+                if (modeLigue) {
+                    // Mode Ligue : adversaires tirés dans la fourchette de BST [min, max].
+                    // Si trop peu de candidats, on élargit les bornes de ±15 % jusqu'à en avoir assez.
+                    tailleAdv = ligueTaille
+                    var min = ligueBstMin.toDouble()
+                    var max = ligueBstMax.toDouble()
+                    fun candidatsLigue() =
+                        tousPokemon.filter { it.id !in ids && bst(it).toDouble() in min..max }
+                    var c = candidatsLigue()
+                    var gardeFou = 0
+                    while (c.size < tailleAdv && gardeFou < 12) {
+                        min *= 0.85; max *= 1.15
+                        c = candidatsLigue()
+                        gardeFou++
+                    }
+                    pool = c.ifEmpty { tousPokemon.filter { it.id !in ids } }
+                } else {
+                    // Calibrage des adversaires sur le BST moyen de l'équipe joueur
+                    tailleAdv = 3
+                    val pokemonsJoueur = ids.distinct().take(6)
+                        .mapNotNull { id -> PokedexRepository.parId(id) }
+                    val bstMoyen = if (pokemonsJoueur.isEmpty()) 300.0
+                    else pokemonsJoueur.map { bst(it) }.average()
+                    fun candidats(facteurMin: Double, facteurMax: Double) =
+                        tousPokemon.filter { it.id !in ids && bst(it).toDouble() in (bstMoyen * facteurMin)..(bstMoyen * facteurMax) }
+                    pool = candidats(0.8, 1.2).takeIf { it.size >= 3 }
+                        ?: candidats(0.65, 1.35).takeIf { it.size >= 3 }
+                        ?: tousPokemon.filter { it.id !in ids }
+                }
+                advEquipe = pool.shuffled().take(tailleAdv)
                     .map { MoteurCombat.depuisPokemon(it, shiny = (1..64).random() == 1) }
                     .toMutableList()
                 advActifIndex = 0
@@ -135,8 +171,8 @@ class CombatActivity : AppCompatActivity() {
                 bindJoueur()
                 etat = Etat.MENU
                 afficherMenu()
-                log("Un Dresseur veut se battre !")
-                log("Le Dresseur envoie ${advActif().nom} !")
+                log(if (modeLigue) "${ligueNom} veut se battre !" else "Un Dresseur veut se battre !")
+                log("${nomDresseur()} envoie ${advActif().nom} !")
                 log("En avant, ${actif().nom} !")
                 enCours = false
             } catch (e: Exception) {
@@ -386,9 +422,9 @@ class CombatActivity : AppCompatActivity() {
             r.enVie && r != advActif() && MoteurCombat.avantage(r, actif()) >= 2.0
         }
         if (remplacant < 0) return false
-        log("Le Dresseur rappelle ${advActif().nom} !")
+        log("${nomDresseur()} rappelle ${advActif().nom} !")
         delay(400)
-        log("Le Dresseur envoie ${advEquipe[remplacant].nom} !")
+        log("${nomDresseur()} envoie ${advEquipe[remplacant].nom} !")
         advActifIndex = remplacant
         bindAdversaire()
         toursDepuisSwitchIA = 0
@@ -470,9 +506,9 @@ class CombatActivity : AppCompatActivity() {
                 val suivant = advEquipe.indexOfFirst { it.enVie }
                 if (suivant >= 0) {
                     advActifIndex = suivant; bindAdversaire()
-                    log("Le Dresseur envoie ${advActif().nom} !"); finTour()
+                    log("${nomDresseur()} envoie ${advActif().nom} !"); finTour()
                 } else {
-                    finPartie("Capturé !", "Bien joué ! Tu as gagné le combat.")
+                    finPartie("Capturé !", "Bien joué ! Tu as gagné le combat.", victoire = true)
                 }
             } else {
                 log("Oh non ! ${advActif().nom} s'est échappé !")
@@ -591,12 +627,12 @@ class CombatActivity : AppCompatActivity() {
             val suivant = advEquipe.indexOfFirst { it.enVie }
             if (suivant < 0) {
                 // Plus aucun adversaire vivant : victoire immédiate, même si le joueur est K.O. aussi.
-                finPartie("Victoire !", "Tu as vaincu le Dresseur ! 🏆")
+                finPartie("Victoire !", "Tu as vaincu le Dresseur ! 🏆", victoire = true)
                 return true
             }
             advActifIndex = suivant
             bindAdversaire()
-            log("Le Dresseur envoie ${advActif().nom} !")
+            log("${nomDresseur()} envoie ${advActif().nom} !")
         }
 
         if (joueurKo) {
@@ -610,7 +646,7 @@ class CombatActivity : AppCompatActivity() {
                 log("Choisis ton prochain Pokémon !")
                 enCours = false
             } else {
-                finPartie("Défaite…", "Toute ton équipe est K.O. 💀")
+                finPartie("Défaite…", "Toute ton équipe est K.O. 💀", victoire = false)
             }
             return true
         }
@@ -630,10 +666,10 @@ class CombatActivity : AppCompatActivity() {
             if (suivant >= 0) {
                 advActifIndex = suivant
                 bindAdversaire()
-                log("Le Dresseur envoie ${advActif().nom} !")
+                log("${nomDresseur()} envoie ${advActif().nom} !")
                 finTour()
             } else {
-                finPartie("Victoire !", "Tu as vaincu le Dresseur ! 🏆")
+                finPartie("Victoire !", "Tu as vaincu le Dresseur ! 🏆", victoire = true)
             }
         } else {
             log("${actif().nom} est K.O. !")
@@ -645,7 +681,7 @@ class CombatActivity : AppCompatActivity() {
                 log("Choisis ton prochain Pokémon !")
                 enCours = false
             } else {
-                finPartie("Défaite…", "Toute ton équipe est K.O. 💀")
+                finPartie("Défaite…", "Toute ton équipe est K.O. 💀", victoire = false)
             }
         }
     }
@@ -656,10 +692,31 @@ class CombatActivity : AppCompatActivity() {
         enCours = false
     }
 
-    private fun finPartie(titre: String, message: String) {
+    private fun finPartie(titre: String, message: String, victoire: Boolean) {
         enCours = true
         vibrer(200)
         findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
+        if (modeLigue) {
+            // En Ligue : on renvoie le résultat à LigueActivity et un seul bouton ferme l'arène.
+            if (victoire) {
+                setResult(RESULT_OK)
+                AlertDialog.Builder(this)
+                    .setTitle("Victoire !")
+                    .setMessage("Tu as vaincu ${ligueNom} ! 🏆")
+                    .setCancelable(false)
+                    .setPositiveButton("Continuer") { _, _ -> finish() }
+                    .show()
+            } else {
+                setResult(RESULT_CANCELED)
+                AlertDialog.Builder(this)
+                    .setTitle("Défaite…")
+                    .setMessage(message)
+                    .setCancelable(false)
+                    .setPositiveButton("Retour") { _, _ -> finish() }
+                    .show()
+            }
+            return
+        }
         AlertDialog.Builder(this)
             .setTitle(titre)
             .setMessage(message)
@@ -817,5 +874,10 @@ class CombatActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ID = "extra_id"
+        const val EXTRA_LIGUE = "extra_ligue"
+        const val EXTRA_LIGUE_TAILLE = "extra_ligue_taille"
+        const val EXTRA_LIGUE_BST_MIN = "extra_ligue_bst_min"
+        const val EXTRA_LIGUE_BST_MAX = "extra_ligue_bst_max"
+        const val EXTRA_LIGUE_NOM = "extra_ligue_nom"
     }
 }
