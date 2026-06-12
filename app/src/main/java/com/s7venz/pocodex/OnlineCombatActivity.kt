@@ -58,6 +58,7 @@ class OnlineCombatActivity : AppCompatActivity() {
     private var dernierEtat: String? = null  // dernier état publié (hôte) — pour re-diffusion
     private var demarrageHote = false        // démarrage hôte en cours (anti double-join pendant la suspension)
     private var finAffichee = false          // dialogue de fin déjà affiché (anti double-dialogue)
+    private var echecsEnvoi = 0              // échecs d'envoi consécutifs (alerte "connexion instable")
 
     private val estHote get() = role == ROLE_HOST
     private val monCamp get() = if (estHote) "host" else "guest"
@@ -155,7 +156,16 @@ class OnlineCombatActivity : AppCompatActivity() {
         JSONObject().put("k", "act").put("seq", seq).put("move", moveIdx).put("mid", mid).toString()
 
     private fun envoyer(payload: String) {
-        lifecycleScope.launch { Reseau.publier(topic, payload) }
+        lifecycleScope.launch {
+            val ok = Reseau.publier(topic, payload)
+            if (ok) {
+                if (echecsEnvoi >= 2) log("Connexion rétablie.")
+                echecsEnvoi = 0
+            } else {
+                echecsEnvoi++
+                if (echecsEnvoi == 2) log("⚠ Connexion instable — vérifie ton réseau.")
+            }
+        }
     }
 
     private fun randomMid(): String {

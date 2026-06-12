@@ -35,11 +35,10 @@ object Reseau {
 
     data class Msg(val id: String, val time: Long, val payload: String)
 
-    /** Publie un message (JSON) sur le topic. */
-    suspend fun publier(topic: String, payload: String) = withContext(Dispatchers.IO) {
+    /** Publie un message (JSON) sur le topic. Renvoie true si la requête a réussi (sans jamais lever). */
+    suspend fun publier(topic: String, payload: String): Boolean = withContext(Dispatchers.IO) {
         val req = Request.Builder().url(BASE + topic).post(payload.toRequestBody()).build()
-        runCatching { client.newCall(req).execute().use { } }
-        Unit
+        runCatching { client.newCall(req).execute().use { it.isSuccessful } }.getOrDefault(false)
     }
 
     /**
