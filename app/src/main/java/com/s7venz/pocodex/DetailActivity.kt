@@ -59,10 +59,10 @@ class DetailActivity : AppCompatActivity() {
                     estDansEquipe = db.equipeDao().present(pokeId)
                     majBoutons()
                 } else {
-                    Toast.makeText(this@DetailActivity, getString(R.string.erreur_reseau), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@DetailActivity, getString(R.string.erreur_donnees), Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@DetailActivity, getString(R.string.erreur_reseau), Toast.LENGTH_LONG).show()
+                Toast.makeText(this@DetailActivity, getString(R.string.erreur_donnees), Toast.LENGTH_LONG).show()
             } finally {
                 progress.isVisible = false
             }

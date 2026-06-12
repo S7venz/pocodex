@@ -90,9 +90,9 @@ class MainActivity : AppCompatActivity() {
                 afficher()
             } catch (e: Exception) {
                 android.util.Log.e("Pokedex", "Erreur chargement : ${e.javaClass.simpleName} ${e.message}", e)
-                messageVide.text = getString(R.string.erreur_reseau)
+                messageVide.text = getString(R.string.erreur_donnees)
                 messageVide.isVisible = true
-                Toast.makeText(this@MainActivity, getString(R.string.erreur_reseau), Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, getString(R.string.erreur_donnees), Toast.LENGTH_LONG).show()
             } finally {
                 progress.isVisible = false
             }

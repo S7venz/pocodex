@@ -27,6 +27,7 @@
     <string name="online_code_hint">CODE</string>
 
     <string name="erreur_reseau">Pas de connexion — vérifie ta connexion Internet.</string>
+    <string name="erreur_donnees">Erreur de chargement des données du Codex.</string>
     <string name="aucun_resultat">Aucun Pokémon trouvé.</string>
     <string name="aucun_favori">Aucun favori pour l\'instant. Ajoute-en depuis une fiche !</string>
 </resources>
