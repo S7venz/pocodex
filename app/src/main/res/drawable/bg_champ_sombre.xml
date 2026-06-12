@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Champ de saisie sombre (style LCD) : fond très sombre + liseré bord2. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#0E0E14" />
+    <corners android:radius="12dp" />
+    <stroke android:width="2dp" android:color="@color/bord2" />
+</shape>

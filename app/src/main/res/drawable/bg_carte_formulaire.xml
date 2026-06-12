@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carte du formulaire d'accueil : panneau sombre + bord + ombre dure portée. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/nuit2" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <item android:bottom="5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/panneau" />
+            <corners android:radius="20dp" />
+            <stroke android:width="2dp" android:color="@color/bord" />
+        </shape>
+    </item>
+</layer-list>

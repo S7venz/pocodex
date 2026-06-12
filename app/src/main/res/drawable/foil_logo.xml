@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reflet foil diagonal arrondi, calé sur la plaque logo (coins 24dp). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="24dp" />
+    <gradient
+        android:angle="315"
+        android:type="linear"
+        android:startColor="#00FFFFFF"
+        android:centerColor="#4DFFFFFF"
+        android:endColor="#00FFFFFF" />
+</shape>

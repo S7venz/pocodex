@@ -29,6 +29,22 @@
     <string name="online_rejoindre">Rejoindre</string>
     <string name="online_code_hint">CODE</string>
 
+    <!-- Écran d'accueil (connexion / inscription / hors-ligne) -->
+    <string name="accueil_titre">POCODEX</string>
+    <string name="accueil_sous_titre">CODEX &amp; ARÈNE</string>
+    <string name="accueil_label_pseudo">PSEUDO</string>
+    <string name="accueil_label_mdp">MOT DE PASSE</string>
+    <string name="accueil_pseudo_hint">Ton pseudo de dresseur</string>
+    <string name="accueil_mdp_hint">Ton mot de passe</string>
+    <string name="accueil_connexion">CONNEXION</string>
+    <string name="accueil_creer">CRÉER UN COMPTE</string>
+    <string name="accueil_chargement">…</string>
+    <string name="accueil_hors_ligne">Jouer hors-ligne →</string>
+    <string name="accueil_label_serveur">SERVEUR</string>
+    <string name="accueil_serveur_hint">http://10.0.2.2:8080</string>
+    <string name="accueil_err_pseudo">Pseudo : 3 à 16 caractères.</string>
+    <string name="accueil_err_mdp">Mot de passe : au moins 6 caractères.</string>
+
     <string name="erreur_reseau">Pas de connexion — vérifie ta connexion Internet.</string>
     <string name="erreur_donnees">Erreur de chargement des données du Codex.</string>
     <string name="aucun_resultat">Aucun Pokémon trouvé.</string>
