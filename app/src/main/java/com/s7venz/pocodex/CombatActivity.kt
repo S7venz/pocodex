@@ -351,10 +351,17 @@ class CombatActivity : AppCompatActivity() {
     }
 
     private fun tenterCapture(ligne: Inventaire.Ligne) {
-        enCours = true
-        etat = Etat.MENU
-        afficherMenu()
         lifecycleScope.launch {
+            if (equipeDao.nombre() >= 6) {
+                log("Ton équipe est pleine ! Impossible de lancer la Poké Ball.")
+                etat = Etat.MENU
+                afficherMenu()
+                enCours = false
+                return@launch
+            }
+            enCours = true
+            etat = Etat.MENU
+            afficherMenu()
             Inventaire.consommer(ligne.objet)
             log("Tu lances une ${ligne.objet.nom} ! …")
             secouer(findViewById(R.id.advSprite))
