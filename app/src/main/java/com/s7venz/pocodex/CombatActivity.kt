@@ -80,6 +80,7 @@ class CombatActivity : AppCompatActivity() {
     }
 
     private fun demarrer() {
+        Inventaire.reinitialiser()
         findViewById<LinearLayout>(R.id.movesContainer).removeAllViews()
         findViewById<TextView>(R.id.logText).text = ""
         findViewById<ProgressBar>(R.id.combatProgress).isVisible = true
