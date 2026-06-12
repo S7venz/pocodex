@@ -707,7 +707,8 @@ class CombatActivity : AppCompatActivity() {
                     .setPositiveButton("Continuer") { _, _ -> finish() }
                     .show()
             } else {
-                setResult(RESULT_CANCELED)
+                // RESULT_CANCELED + data non nul : marque une VRAIE défaite (≠ retour arrière).
+                setResult(RESULT_CANCELED, android.content.Intent().putExtra(EXTRA_LIGUE_DEFAITE, true))
                 AlertDialog.Builder(this)
                     .setTitle("Défaite…")
                     .setMessage(message)
@@ -879,5 +880,6 @@ class CombatActivity : AppCompatActivity() {
         const val EXTRA_LIGUE_BST_MIN = "extra_ligue_bst_min"
         const val EXTRA_LIGUE_BST_MAX = "extra_ligue_bst_max"
         const val EXTRA_LIGUE_NOM = "extra_ligue_nom"
+        const val EXTRA_LIGUE_DEFAITE = "extra_ligue_defaite"
     }
 }

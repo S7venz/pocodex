@@ -20,6 +20,9 @@
     <string name="combattre_equipe">⚔️ Combattre avec l\'équipe</string>
     <string name="retirer">Retirer</string>
 
+    <string name="ligue_titre">Ligue</string>
+    <string name="ligue_equipe_vide">Compose d\'abord ton équipe dans le Codex.</string>
+
     <string name="online_titre">Combat en ligne</string>
     <string name="online_explication">Crée une partie et partage le code, ou rejoins la partie d\'un ami avec son code. Ton 1er Pokémon d\'équipe combat (Pikachu par défaut).</string>
     <string name="online_creer">Créer une partie</string>
