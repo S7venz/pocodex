@@ -143,7 +143,7 @@ class DetailActivity : AppCompatActivity() {
                     Toast.makeText(this@DetailActivity, getString(R.string.equipe_pleine), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
-                dao.ajouter(MembreEquipe(pokeId, dao.nombre()))
+                dao.ajouter(MembreEquipe(pokeId, dao.ordreMax() + 1))
                 estDansEquipe = true
                 Toast.makeText(this@DetailActivity, "$nom rejoint l'équipe !", Toast.LENGTH_SHORT).show()
             }

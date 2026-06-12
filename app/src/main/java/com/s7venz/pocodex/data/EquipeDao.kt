@@ -17,6 +17,9 @@ interface EquipeDao {
     @Query("SELECT COUNT(*) FROM equipe")
     suspend fun nombre(): Int
 
+    @Query("SELECT COALESCE(MAX(ordre), -1) FROM equipe")
+    suspend fun ordreMax(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun ajouter(membre: MembreEquipe)
 

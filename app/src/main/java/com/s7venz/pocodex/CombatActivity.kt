@@ -372,7 +372,7 @@ class CombatActivity : AppCompatActivity() {
                 log("Gagné ! ${advActif().nom} est capturé ! 🎉")
                 vibrer(120)
                 val n = equipeDao.nombre()
-                if (n < 6) equipeDao.ajouter(MembreEquipe(advActif().id, n))
+                if (n < 6) equipeDao.ajouter(MembreEquipe(advActif().id, equipeDao.ordreMax() + 1))
                 advActif().pv = 0
                 animerKo(findViewById(R.id.advSprite))
                 delay(700)
