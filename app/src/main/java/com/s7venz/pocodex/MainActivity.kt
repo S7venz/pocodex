@@ -60,6 +60,9 @@ class MainActivity : AppCompatActivity() {
             majIconeFavoris()
             afficher()
         }
+        findViewById<ImageButton>(R.id.btnLigue).setOnClickListener {
+            startActivity(Intent(this, LigueActivity::class.java))
+        }
         findViewById<ImageButton>(R.id.btnEquipe).setOnClickListener {
             startActivity(Intent(this, EquipeActivity::class.java))
         }
