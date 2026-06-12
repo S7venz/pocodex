@@ -344,6 +344,7 @@ class OnlineCombatActivity : AppCompatActivity() {
         val img = findViewById<ImageView>(R.id.joueurSprite)
         img.alpha = 1f; img.translationY = 0f
         img.load(moi.spriteUrl) { crossfade(true) }
+        img.scaleX = -1f
         remplirChips(findViewById(R.id.joueurChips), moi)
         setHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), moi)
     }

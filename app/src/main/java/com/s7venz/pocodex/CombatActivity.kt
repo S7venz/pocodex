@@ -139,6 +139,7 @@ class CombatActivity : AppCompatActivity() {
         val img = findViewById<ImageView>(R.id.joueurSprite)
         img.alpha = 1f; img.translationY = 0f; img.clearColorFilter()
         img.load(actif().spriteUrl) { crossfade(true) }
+        img.scaleX = -1f
         remplirChips(findViewById(R.id.joueurChips), actif())
         setHp(findViewById(R.id.joueurHpBar), findViewById(R.id.joueurHpTxt), actif())
         entree(img, depuisDroite = false)
